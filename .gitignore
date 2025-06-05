@@ -1,8 +1,6 @@
 # Mill build output
 /out/
 /target/
-/.idea/
-/*.iml
 
 # Coursier cache
 /.coursier
