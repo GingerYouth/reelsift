@@ -1,0 +1,50 @@
+# Mill build output
+/out/
+/target/
+/.idea/
+/*.iml
+
+# Coursier cache
+/.coursier
+
+# IntelliJ IDEA
+/.idea/
+/*.iws
+/*.ipr
+/*.iml
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Java
+*.class
+
+# Mill specific
+.mill-jvm-opts
+.mill-release
+
+# User-specific files
+*.swp
+*.swo
+
+# Windows specific
+ehthumbs.db
+Desktop.ini
+
+# Mac specific
+.AppleDouble
+.LSOverride
+
+# Build tools
+/build/
+
+# Misc
+*.bak
+*.tmp
