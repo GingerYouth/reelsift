@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Mill
         run: |
-          curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.10/0.12.10 > mill && chmod +x mill
+          curl -L https://github.com/com-lihaoyi/mill/releases/latest/download/mill > mill && chmod +x mill
 
       - name: Run Checkstyle
         run: ./mill reel.checkstyle
