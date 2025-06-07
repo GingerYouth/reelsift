@@ -16,11 +16,11 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '24'
+          java-version: '17'
 
       - name: Install Mill
         run: |
-          curl -L https://github.com/com-lihaoyi/mill/releases/latest/download/mill > mill && chmod +x mill
+          curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.14/0.12.14 > mill && chmod +x mill
 
       - name: Run Checkstyle
         run: ./mill reel.checkstyle
