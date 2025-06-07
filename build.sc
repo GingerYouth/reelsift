@@ -1,5 +1,3 @@
-package build
-
 import mill._, mill.javalib._, checkstyle._
 import mill.{Module, T, _}
 
