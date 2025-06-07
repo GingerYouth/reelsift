@@ -22,12 +22,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Mill
-        run: |
-          curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.14/0.12.14 -o mill
-          chmod +x mill
-          ./mill --version
+      - name: Make mill executable
+        run: chmod +x mill
 
       - name: Run Checkstyle via Mill
-        run: |
-          ./mill reel.checkstyle
+        run: ./mill reel.checkstyle
