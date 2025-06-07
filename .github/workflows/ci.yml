@@ -18,14 +18,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-    - name: Install Mill
+      - name: Install Mill
         run: |
-            curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.14/mill -o mill
-            chmod +x mill
-            if [[ $(file mill) != *"shell script"* ]]; then
-                echo "Invalid mill executable downloaded"
-                exit 1
-            fi
+        curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.14/mill -o mill
+        chmod +x mill
+        if [[ $(file mill) != *"shell script"* ]]; then
+            echo "Invalid mill executable downloaded"
+            exit 1
+        fi
 
       - name: Test Mill Binary
         run: ./mill version || echo "Mill binary execution failed"
