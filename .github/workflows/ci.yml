@@ -20,7 +20,12 @@ jobs:
 
       - name: Install Mill
         run: |
-          curl -L https://github.com/com-lihaoyi/mill/releases/download/0.12.14/0.12.14 > mill && chmod +x mill
+          curl -L https://github.com/com-lihaoyi/mill/releases/latest/download/mill -o mill
+          chmod +x mill
+          file mill || echo "Invalid mill executable downloaded"
+
+      - name: Test Mill Binary
+        run: ./mill version || echo "Mill binary execution failed"
 
       - name: Run Checkstyle
         run: ./mill reel.checkstyle
