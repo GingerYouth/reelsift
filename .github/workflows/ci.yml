@@ -1,0 +1,33 @@
+name: Mill Reel Checkstyle
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+
+jobs:
+  checkstyle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Mill
+        run: |
+          curl -L https://github.com/com-lihaoyi/mill/releases/latest/download/mill -o mill
+          chmod +x mill
+          ./mill --version
+
+      - name: Run Checkstyle via Mill
+        run: |
+          ./mill reel.checkstyle
