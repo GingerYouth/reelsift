@@ -3,6 +3,7 @@ package main.java.sift;
 import java.util.Date;
 import java.util.stream.Stream;
 
+/** Time filter. */
 public class TimeFilter implements Filter {
     private final Date from;
     private final Date to;
