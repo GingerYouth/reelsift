@@ -1,5 +1,7 @@
 import mill._, mill.javalib._, checkstyle._
 import mill.{Module, T, _}
+//import $ivy.`org.jsoup:jsoup:1.20.1`
+//import org.jsoup._
 
 def sources = Task.Source {
   "reel/src"
@@ -23,6 +25,9 @@ def lineCount: T[Int] = Task {
 
 object reel extends JavaModule with CheckstyleModule {
   def mainClass = Some("Main")
-
   def checkstyleVersion = "10.25.0"
+
+  def ivyDeps = Agg(
+    ivy"org.jsoup:jsoup:1.20.1"
+  )
 }
