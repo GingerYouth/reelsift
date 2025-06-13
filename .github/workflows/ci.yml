@@ -9,6 +9,17 @@ on:
   pull_request:
 
 jobs:
+  pmd:
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - uses: pmd/pmd-github-action@v2
+        with:
+          rulesets: 'pmd-ruleset.xml'
+
   checkstyle:
     runs-on: ubuntu-latest
 
