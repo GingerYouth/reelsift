@@ -1,7 +1,5 @@
 import mill._, mill.javalib._, checkstyle._
 import mill.{Module, T, _}
-//import $ivy.`org.jsoup:jsoup:1.20.1`
-//import org.jsoup._
 
 def sources = Task.Source {
   "reel/src"
