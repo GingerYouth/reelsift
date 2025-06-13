@@ -9,17 +9,6 @@ on:
   pull_request:
 
 jobs:
-  pmd:
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-      - uses: pmd/pmd-github-action@v2
-        with:
-          rulesets: 'pmd-ruleset.xml'
-
   checkstyle:
     runs-on: ubuntu-latest
 
@@ -38,3 +27,8 @@ jobs:
 
       - name: Run Checkstyle via Mill
         run: ./mill reel.checkstyle
+
+      - name: PMD
+        uses: pmd/pmd-github-action@v2.0.0
+        with:
+          rulesets: 'ruleset.xml'
