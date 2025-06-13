@@ -1,4 +1,4 @@
-name: Mill Reel Checkstyle
+name: Checkstyle & PMD
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   pull_request:
 
 jobs:
-  checkstyle:
+  codecheck:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,3 +32,6 @@ jobs:
         uses: pmd/pmd-github-action@v2.0.0
         with:
           rulesets: 'pmd-ruleset.xml'
+      - name: Fail build if there are violations
+        if: steps.pmd.outputs.violations != 0
+        run: exit 1
