@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import static main.java.sift.AfishaParser.parseTodayFilms;
 
 /** Main class. */
+@SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
     public static void main(String[]args) throws Exception {
         final AfishaParser parser = new AfishaParser();
@@ -21,7 +22,7 @@ public class Main {
         final MandatoryGenres mandatory = new MandatoryGenres(List.of("Детектив"));
         final Filters filters = new Filters(timeFilter, excluded, mandatory);
         final List<Session> filtered = filters.filter(sessions);
-        // TODO:: Filtering by description & verdict with LLM 
+        // TODO:: Filtering by description & verdict with LLM
         print(filtered);
     }
 
