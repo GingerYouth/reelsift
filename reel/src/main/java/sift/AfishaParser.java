@@ -32,17 +32,18 @@ public class AfishaParser {
     private static final String BASE_LINK = "https://www.afisha.ru";
     private static final String TODAY_FILMS_PAGE_N = "https://www.afisha.ru/msk/schedule_cinema/na-segodnya/page%d/";
     public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
-    private static final ZoneId MOSCOW_ZONE = ZoneId.of("Europe/Moscow");
+
     private final String currentDatePeriod;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+
     private static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "
         + "AppleWebKit/537.36 (KHTML, like Gecko) "
         + "Chrome/134.0.6998.166 Safari/537.36";
+
     private static final Pattern FILM_REF_PATTERN = Pattern.compile(
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
-
 
     public AfishaParser() throws IOException {
         this.cookies = this.getCookies();
@@ -176,6 +177,13 @@ public class AfishaParser {
         final List<Session> result = new ArrayList<>();
         final JSONObject root = new JSONObject(json);
         final JSONObject info = root.getJSONObject("MovieCard").getJSONObject("Info");
+
+        final JSONArray genresArray = info.getJSONObject("Genres").getJSONArray("Links");
+        final List<String> genres = new ArrayList<>();
+        for (int i = 0; i < genresArray.length(); i++) {
+            genres.add(((JSONObject) genresArray.get(i)).get("Name").toString());
+        }
+
         JSONObject distributorInfo = null;
         try {
             distributorInfo = info.getJSONObject("DistributorInfo");
@@ -198,6 +206,7 @@ public class AfishaParser {
                     info.get("Name").toString(),
                     distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
                     info.get("Verdict").toString(),
+                    genres,
                     place.getString("Name"),
                     place.get("Address").toString(),
                     price.equals("null") ? -1 : Integer.parseInt(price),
