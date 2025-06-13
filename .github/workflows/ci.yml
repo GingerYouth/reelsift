@@ -31,4 +31,4 @@ jobs:
       - name: PMD
         uses: pmd/pmd-github-action@v2.0.0
         with:
-          rulesets: 'ruleset.xml'
+          rulesets: 'pmd-ruleset.xml'
