@@ -1,17 +1,20 @@
 package main.java.sift;
 
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import static main.java.sift.AfishaParser.parseSchedulePage;
 import static main.java.sift.AfishaParser.parseTodayFilms;
 
 /** Main class. */
 public class Main {
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
-
     public static void main(String[]args) throws Exception {
+        final AfishaParser parser = new AfishaParser();
         final Map<String, String> films = parseTodayFilms();
-        parseSchedulePage("");
-        int x = 0;
+        final List<Session> sessions = new ArrayList<>();
+        for (final Map.Entry<String, String> entry : films.entrySet()) {
+            sessions.addAll(parser.parseSchedule(entry.getValue()));
+        }
+        // TODO:: Sessions filtering
+        // TODO:: Output
     }
 }
