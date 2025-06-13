@@ -1,22 +1,22 @@
 package main.java.sift;
 
-import java.util.Date;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 
 /** Time filter. */
 public class TimeFilter implements Filter {
-    private final Date from;
-    private final Date to;
+    private final LocalTime from;
+    private final LocalTime to;
 
-    public TimeFilter(final Date from, final Date to) {
+    public TimeFilter(final LocalTime from, final LocalTime to) {
         this.from = from;
         this.to = to;
     }
 
     @Override
-    public Stream<Show> filter(final Stream<Show> shows) {
+    public Stream<Session> filter(final Stream<Session> shows) {
         return shows
-            .filter(s -> s.getDateTime().after(this.from))
-            .filter(s -> s.getDateTime().before(this.to));
+            .filter(s -> s.dateTime().isAfter(this.from))
+            .filter(s -> s.dateTime().isBefore(this.to));
     }
 }

@@ -4,5 +4,5 @@ import java.util.stream.Stream;
 
 /** Filter interface. */
 public interface Filter {
-    Stream<Show> filter(Stream<Show> shows);
+    Stream<Session> filter(Stream<Session> shows);
 }
