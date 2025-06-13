@@ -30,6 +30,7 @@ jobs:
 
       - name: PMD
         uses: pmd/pmd-github-action@v2.0.0
+        id: pmd
         with:
           sourcePath: 'reel/src/main/java/sift'
           rulesets: 'pmd-ruleset.xml'
