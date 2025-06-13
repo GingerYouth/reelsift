@@ -28,6 +28,7 @@ object reel extends JavaModule with CheckstyleModule {
   def checkstyleVersion = "10.25.0"
 
   def ivyDeps = Agg(
-    ivy"org.jsoup:jsoup:1.20.1"
+    ivy"org.jsoup:jsoup:1.20.1",
+    ivy"org.json:json:20250517"
   )
 }
