@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import static main.java.sift.AfishaParser.parseTodayFilms;
 
 /** Main class. */
+@SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
     public static void main(String[]args) throws Exception {
         final AfishaParser parser = new AfishaParser();
