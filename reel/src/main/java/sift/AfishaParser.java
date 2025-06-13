@@ -17,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
@@ -174,6 +175,13 @@ public class AfishaParser {
         }
         final List<Session> result = new ArrayList<>();
         final JSONObject root = new JSONObject(json);
+        final JSONObject info = root.getJSONObject("MovieCard").getJSONObject("Info");
+        JSONObject distributorInfo = null;
+        try {
+            distributorInfo = info.getJSONObject("DistributorInfo");
+        } catch (final JSONException ignored) {
+            // Sometimes it's empty
+        }
         final JSONArray items = root
             .getJSONObject("ScheduleWidget")
             .getJSONObject("ScheduleList")
@@ -187,8 +195,9 @@ public class AfishaParser {
                 final String price = session.get("MinPriceFormatted").toString();
                 result.add(new Session(
                     LocalTime.parse(session.get("Time").toString(), TIME_FORMATTER),
-                    "film-name",
-                    "description",
+                    info.get("Name").toString(),
+                    distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
+                    info.get("Verdict").toString(),
                     place.getString("Name"),
                     place.get("Address").toString(),
                     price.equals("null") ? -1 : Integer.parseInt(price),

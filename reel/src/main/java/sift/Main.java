@@ -16,5 +16,6 @@ public class Main {
         }
         // TODO:: Sessions filtering
         // TODO:: Output
+        System.out.println("");
     }
 }
