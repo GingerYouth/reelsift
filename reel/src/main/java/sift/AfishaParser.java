@@ -75,10 +75,16 @@ public class AfishaParser {
     public static Map<String, String> parseTodayFilms() throws Exception {
         final Map<String, String> films = new TreeMap<>();
         Map<String, String> pageFilms;
+        Set<String> prevFilms = new HashSet<>();
         int page = 0;
         do {
             try {
                 pageFilms = parseFilmsPage(String.format(TODAY_FILMS_PAGE_N, page));
+                final Set<String> keySet = pageFilms.keySet();
+                if (prevFilms.equals(keySet)) {
+                    break;
+                }
+                prevFilms = keySet;
                 page++;
                 films.putAll(pageFilms);
             } catch (final HttpStatusException httpEx) {
