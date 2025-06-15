@@ -21,7 +21,7 @@ public class Main {
         //final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия"));
         //final MandatoryGenres mandatory = new MandatoryGenres(List.of("Семейный"));
         final LlmFilter llmFilter = new LlmFilter(
-            "очень страшный фильм"
+            "драму про подруг"
         );
         final Filters filters = new Filters(
             //timeFilter,

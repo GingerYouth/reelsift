@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /** Properties loader. */
-public class PropertiesLoader {
+public final class PropertiesLoader {
     private static final String PROPERTIES_FILE = "app.properties";
     private static final Properties INSTANCE = new Properties();
 
@@ -16,8 +16,9 @@ public class PropertiesLoader {
     private PropertiesLoader() {
     }
 
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     private static void loadProperties() {
-        try (final InputStream input = PropertiesLoader.class.getClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
+        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(PROPERTIES_FILE)) {
             if (input == null) {
                 throw new IllegalStateException(PROPERTIES_FILE + " not found in classpath");
             }
@@ -27,7 +28,7 @@ public class PropertiesLoader {
         }
     }
 
-    public static String get(String key) {
+    public static String get(final String key) {
         return INSTANCE.getProperty(key);
     }
 }

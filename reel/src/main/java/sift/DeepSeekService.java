@@ -13,9 +13,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /** DeepSeek service. */
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DeepSeekService {
     private static final String API_URL = "https://api.deepseek.com/v1/chat/completions";
-    private static final String apiKey = PropertiesLoader.get("deepSeekApiKey");
+    private static final String API_KEY = PropertiesLoader.get("deepSeekApiKey");
     private final String model;
     private final HttpClient httpClient;
 
@@ -54,7 +55,7 @@ public class DeepSeekService {
             final HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + API_KEY)
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
                 .timeout(Duration.ofSeconds(60))
                 .build();
@@ -78,11 +79,11 @@ public class DeepSeekService {
     }
 
     private static String moviesAsString(final List<Movie> movies) {
-        final StringBuilder sb = new StringBuilder("Доступные фильмы:\n");
+        final StringBuilder builder = new StringBuilder("Доступные фильмы:\n");
         for (final Movie movie : movies) {
-            sb.append(movie.llmInputFormat());
+            builder.append(movie.llmInputFormat());
         }
-        return sb.toString();
+        return builder.toString();
     }
 
     private static List<Movie> parseResponse(final String jsonResponse, final List<Movie> movies) {
@@ -100,24 +101,10 @@ public class DeepSeekService {
                 .getString("content");
             content = content.replace("\\\"", "\"");
 
-            JSONObject contentJson;
-            try {
-                contentJson = new JSONObject(content);
-            } catch (final JSONException jsonEx) {
-                // Attempt to find JSON substring
-                int startIdx = content.indexOf('{');
-                int endIdx = content.lastIndexOf('}') + 1;
-                if (startIdx != -1 && endIdx > startIdx) {
-                    contentJson = new JSONObject(content.substring(startIdx, endIdx));
-                } else {
-                    throw jsonEx;
-                }
-            }
-            final JSONArray moviesArray = contentJson.getJSONArray("movies");
+            final JSONArray moviesArray = getMoviesArray(content);
             final List<String> titles = new ArrayList<>();
             for (int i = 0; i < moviesArray.length(); i++) {
-                JSONObject movieObj = moviesArray.getJSONObject(i);
-                titles.add(movieObj.getString("title"));
+                titles.add(moviesArray.getJSONObject(i).getString("title"));
             }
             return movies.stream()
                 .filter(m -> titles.contains(m.title()))
@@ -127,6 +114,24 @@ public class DeepSeekService {
             System.err.println("Response: " + jsonResponse);
             return new ArrayList<>();
         }
+    }
+
+    private static JSONArray getMoviesArray(String content) {
+        JSONObject contentJson;
+        try {
+            contentJson = new JSONObject(content);
+        } catch (final JSONException jsonEx) {
+            // Attempt to find JSON substring
+            final int startIdx = content.indexOf('{');
+            final int endIdx = content.lastIndexOf('}') + 1;
+            if (startIdx != -1 && endIdx > startIdx) {
+                contentJson = new JSONObject(content.substring(startIdx, endIdx));
+            } else {
+                throw jsonEx;
+            }
+        }
+        final JSONArray moviesArray = contentJson.getJSONArray("movies");
+        return moviesArray;
     }
 
     private static String buildSystemPrompt() {

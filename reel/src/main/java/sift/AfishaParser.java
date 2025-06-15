@@ -3,7 +3,6 @@ package main.java.sift;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +23,6 @@ import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /** Afisha.ru parser. */
 public class AfishaParser {
@@ -72,7 +70,7 @@ public class AfishaParser {
      *
      * @return The map of film names to the link to the sessions
      */
-    public static Map<String, String> parseTodayFilms() throws Exception {
+    public static Map<String, String> parseTodayFilms() throws IOException {
         final Map<String, String> films = new TreeMap<>();
         Map<String, String> pageFilms;
         Set<String> prevFilms = new HashSet<>();
@@ -102,9 +100,9 @@ public class AfishaParser {
     private static Map<String, String> parseFilmsPage(final String link) throws IOException {
         final Map<String, String> schedules = new HashMap<>();
         final Document document = Jsoup.connect(link).userAgent(USER_AGENT).get();
-        final Elements filmContainers = document.select("div[data-test='ITEM']");
+        final List<Element> filmContainers = document.select("div[data-test='ITEM']");
         for (final Element container : filmContainers) {
-            Elements linkElements = container.getElementsByAttributeValue(
+            List<Element> linkElements = container.getElementsByAttributeValue(
                 "data-test", "LINK LINK-BUTTON TICKET-BUTTON"
             );
             if (linkElements.isEmpty()) {
@@ -138,10 +136,10 @@ public class AfishaParser {
      * @param link The link to the specific movie's schedule
      * @return The list of {@link Session}
      */
-    public List<Session> parseSchedule(final String link) throws Exception {
+    public List<Session> parseSchedule(final String link) throws IOException {
         final List<Session> result = new ArrayList<>();
         int page = 1;
-        String jsonPage = "";
+        String jsonPage;
         Set<String> prevCinemas = new HashSet<>();
         do {
             try {
@@ -171,7 +169,7 @@ public class AfishaParser {
             .header("Sec-Fetch-Mode", "cors")
             .header("Sec-Fetch-Site", "same-origin")
             .userAgent(USER_AGENT)
-            .timeout(15000)
+            .timeout(15_000)
             .execute()
             .body();
     }
@@ -215,7 +213,7 @@ public class AfishaParser {
                     genres,
                     place.getString("Name"),
                     place.get("Address").toString(),
-                    price.equals("null") ? -1 : Integer.parseInt(price),
+                    "null".equals(price) ? -1 : Integer.parseInt(price),
                     "link"
                 ));
             }
