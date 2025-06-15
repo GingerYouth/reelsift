@@ -22,7 +22,7 @@ def lineCount: T[Int] = Task {
 }
 
 object reel extends JavaModule with CheckstyleModule {
-  def mainClass = Some("main.java.sift.Main")
+  def mainClass = Some("reel.src.main.java.sift.Main")
   def checkstyleVersion = "10.25.0"
 
   def ivyDeps = Agg(
