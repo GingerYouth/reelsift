@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 /** Time filter. */
 public class TimeFilter implements Filter {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
-    private LocalTime from = LocalTime.parse("0:00", TIME_FORMATTER);
-    private LocalTime to = LocalTime.parse("23:59", TIME_FORMATTER);
+    private final LocalTime from;
+    private final LocalTime to;
 
     public TimeFilter(final String from, final String to) {
         this(LocalTime.parse(from), LocalTime.parse(to));
