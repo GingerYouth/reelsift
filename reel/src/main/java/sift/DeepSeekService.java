@@ -86,6 +86,7 @@ public class DeepSeekService {
         return builder.toString();
     }
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     private static List<Movie> parseResponse(final String jsonResponse, final List<Movie> movies) {
         try {
             final JSONObject responseJson = new JSONObject(jsonResponse);
@@ -116,7 +117,7 @@ public class DeepSeekService {
         }
     }
 
-    private static JSONArray getMoviesArray(String content) {
+    private static JSONArray getMoviesArray(final String content) {
         JSONObject contentJson;
         try {
             contentJson = new JSONObject(content);
@@ -130,8 +131,7 @@ public class DeepSeekService {
                 throw jsonEx;
             }
         }
-        final JSONArray moviesArray = contentJson.getJSONArray("movies");
-        return moviesArray;
+        return contentJson.getJSONArray("movies");
     }
 
     private static String buildSystemPrompt() {
