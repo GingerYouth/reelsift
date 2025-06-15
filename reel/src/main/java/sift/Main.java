@@ -17,12 +17,19 @@ public class Main {
         for (final Map.Entry<String, String> entry : films.entrySet()) {
             sessions.addAll(parser.parseSchedule(entry.getValue()));
         }
-        final TimeFilter timeFilter = new TimeFilter("22:50", "23:58");
-        final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия"));
-        final MandatoryGenres mandatory = new MandatoryGenres(List.of("Детектив"));
-        final Filters filters = new Filters(timeFilter, excluded, mandatory);
+        //final TimeFilter timeFilter = new TimeFilter("15:50", "23:59");
+        //final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия"));
+        //final MandatoryGenres mandatory = new MandatoryGenres(List.of("Семейный"));
+        final LlmFilter llmFilter = new LlmFilter(
+            "драму про подруг"
+        );
+        final Filters filters = new Filters(
+            //timeFilter,
+            //excluded,
+            //mandatory,
+            llmFilter
+        );
         final List<Session> filtered = filters.filter(sessions);
-        // TODO:: Filtering by description & verdict with LLM
         print(filtered);
     }
 
@@ -32,14 +39,15 @@ public class Main {
 
         final List<MovieGroup> movieGroups = groupedByName.entrySet().stream()
             .map(entry -> {
-                final String filmName = entry.getKey();
-                final String verdict = entry.getValue().getFirst().verdict();
-                final String description = entry.getValue().getFirst().description();
+                final Session firstSession = entry.getValue().getFirst();
                 // Sort sessions by time
                 final List<Session> sortedSessions = entry.getValue().stream()
                     .sorted(Comparator.comparing(Session::dateTime))
                     .collect(Collectors.toList());
-                return new MovieGroup(filmName, verdict, description, sortedSessions);
+                return new MovieGroup(
+                        entry.getKey(), firstSession.genres(),
+                        firstSession.verdict(), firstSession.description(),
+                        sortedSessions);
             })
             .sorted(Comparator.comparing(
                 MovieGroup::filmName,
@@ -49,6 +57,13 @@ public class Main {
 
         for (final MovieGroup group : movieGroups) {
             System.out.println("Film: " + group.filmName());
+            System.out.print("Genres: ");
+            System.out.println(
+                group.genres()
+                    .stream()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "))
+            );
             System.out.println("Verdict: " + group.verdict());
             System.out.println("Description: " + group.description());
             System.out.println("Sessions: ");
@@ -68,6 +83,6 @@ public class Main {
     }
 
     private record MovieGroup(
-        String filmName, String verdict, String description, List<Session> sessions
+        String filmName, List<String> genres, String verdict, String description, List<Session> sessions
     ) {}
 }
