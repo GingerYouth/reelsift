@@ -1,5 +1,9 @@
 package main.java.sift;
 
+import main.java.sift.filters.ExcludedGenres;
+import main.java.sift.filters.Filters;
+import main.java.sift.filters.MandatoryGenres;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -18,16 +22,16 @@ public class Main {
             sessions.addAll(parser.parseSchedule(entry.getValue()));
         }
         //final TimeFilter timeFilter = new TimeFilter("15:50", "23:59");
-        //final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия"));
-        //final MandatoryGenres mandatory = new MandatoryGenres(List.of("Семейный"));
-        final LlmFilter llmFilter = new LlmFilter(
-            "драму про подруг"
-        );
+        final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия", "Ужасы"));
+        final MandatoryGenres mandatory = new MandatoryGenres(List.of(
+            "Триллер", "Драма", "Фантастика", "Приключение", "Детектив", "Исторический"
+        ));
+        //final LlmFilter llmFilter = new LlmFilter("фильм про человеский подвиг");
         final Filters filters = new Filters(
             //timeFilter,
-            //excluded,
-            //mandatory,
-            llmFilter
+            excluded,
+            mandatory
+            //llmFilter
         );
         final List<Session> filtered = filters.filter(sessions);
         print(filtered);
