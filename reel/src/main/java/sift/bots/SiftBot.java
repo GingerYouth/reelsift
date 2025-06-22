@@ -1,5 +1,11 @@
 package main.java.sift.bots;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import main.java.sift.AfishaParser;
 import main.java.sift.PropertiesLoader;
 import main.java.sift.Session;
@@ -14,14 +20,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static main.java.sift.AfishaParser.parseTodayFilms;
 
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
@@ -43,24 +41,24 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final Map<Long, String> mandatoryGenres = new ConcurrentHashMap<>();
     private final Map<Long, String> aiPrompts = new ConcurrentHashMap<>();
 
-    private static final String TIME_TRIGGER = "Задать время начала сеанса";
+    private static final String TIME_TRIGGER = "⏰ Задать время начала сеанса";
     private static final String TIME_FILTER_GUIDE = "Укажите желаемый диапазон времени начала сеанса" +
         " в формате HH:MM-HH:MM, например 18:30-23:30";
 
-    private static final String EXCLUDED_TRIGGER = "Задать нежелательные жанры";
+    private static final String EXCLUDED_TRIGGER = "🚫 Задать нежелательные жанры";
     private static final String EXCLUDED_FILTER_GUIDE = "Укажите нежелательные жанры, например: Комедия, мелодрама";
 
-    private static final String MANDATORY_TRIGGER = "Задать предпочтительные жанры";
+    private static final String MANDATORY_TRIGGER = "✅ Задать предпочтительные жанры";
     private static final String MANDATORY_GUIDE = "Укажите жанры для поиска, например: Триллер, драма\n";
 
-    private static final String AI_TRIGGER = "Добавить AI-фильтр";
+    private static final String AI_TRIGGER = "🤖 Добавить AI-фильтр";
     private static final String AI_GUIDE = "Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n" +
         "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть...";
 
-    private static final String EDIT_TRIGGER = "Изменить текущие фильтры";
+    private static final String EDIT_TRIGGER = "⚙️ Изменить текущие фильтры";
     private static final String EDIT_GUIDE = "Текущие фильтры. Для изменения введите номер фильтра.\n";
 
-    private static final String SEARCH_TRIGGER = "Поиск!";
+    private static final String SEARCH_TRIGGER = "\uD83D\uDD0D Поиск!";
     private static final String SEARCH_GUIDE = "Пожалуйста, ожидайте...\n";
 
     private static final String EDIT_TIME = "Изменить время";
@@ -69,20 +67,13 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String EDIT_AI = "Изменить AI-запрос";
     private static final String BACK_COMMAND = "🔙 Назад";
 
-    private static final Set<String> MAIN_COMMANDS = Set.of(
+    private static final Set<String> TRIGGERS = Set.of(
         TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
         AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER
     );
 
     private static final Set<String> EDIT_COMMANDS = Set.of(
         EDIT_TIME, EDIT_EXCLUDED, EDIT_MANDATORY, EDIT_AI, BACK_COMMAND
-    );
-
-    private static final Set<String> TRIGGERS = Set.of(
-        TIME_TRIGGER,
-        EXCLUDED_TRIGGER,
-        MANDATORY_TRIGGER,
-        AI_TRIGGER
     );
 
     @Override
@@ -94,7 +85,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final String chatIdString = String.valueOf(chatId);
         final String text = update.getMessage().getText();
         // Обработка главного меню
-        if (MAIN_COMMANDS.contains(text)) {
+        if (TRIGGERS.contains(text)) {
             handleMainCommand(chatId, chatIdString, text);
         }
         // Обработка меню редактирования
@@ -255,8 +246,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         keyboard.add(row);
         row = new KeyboardRow();
         row.add(AI_TRIGGER);
-        row.add("Изменить текущие фильтры");
-        row.add("Поиск!");
+        row.add(EDIT_TRIGGER);
+        row.add(SEARCH_TRIGGER);
         keyboard.add(row);
         final ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(keyboard);
         sendMessage.setReplyMarkup(keyboardMarkup);
@@ -324,7 +315,10 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             sessions.addAll(parser.parseSchedule(entry.getValue()));
         }
         final List<Session> filtered = filters.filter(sessions);
-        sendMessage(chatIdString, "Found " + filtered.size());
-        // TODO:: output
+        sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
+
+        for (final String split : Session.toSplitStrings(filtered)) {
+            sendMessage(chatIdString, split);
+        }
     }
 }
