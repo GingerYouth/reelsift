@@ -6,14 +6,13 @@ import java.util.Map;
 import main.java.sift.filters.ExcludedGenres;
 import main.java.sift.filters.Filters;
 import main.java.sift.filters.MandatoryGenres;
-import static main.java.sift.AfishaParser.parseTodayFilms;
 
 /** Main class. */
 @SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
     public static void main(String[]args) throws Exception {
         final AfishaParser parser = new AfishaParser();
-        final Map<String, String> films = parseTodayFilms();
+        final Map<String, String> films = AfishaParser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();
         for (final Map.Entry<String, String> entry : films.entrySet()) {
             sessions.addAll(parser.parseSchedule(entry.getValue()));
@@ -26,7 +25,6 @@ public class Main {
             //timeFilter,
             excluded,
             mandatory
-            //llmFilter
         );
         final List<Session> filtered = filters.filter(sessions);
         System.out.println(Session.toString(filtered));

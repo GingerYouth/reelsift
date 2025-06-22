@@ -4,6 +4,7 @@ import main.java.sift.PropertiesLoader;
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+/** Main class for bot startup. */
 public class MainBot {
     public static void main(String[] args) {
         try {

@@ -8,7 +8,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import main.java.sift.Movie;
 import main.java.sift.PropertiesLoader;
 import org.json.JSONArray;

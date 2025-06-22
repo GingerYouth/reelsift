@@ -20,8 +20,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
-import static main.java.sift.AfishaParser.parseTodayFilms;
 
+/** Telegram bot logic. */
+@SuppressWarnings("PMD.AvoidEscapedUnicodeCharacters")
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
@@ -42,8 +43,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final Map<Long, String> aiPrompts = new ConcurrentHashMap<>();
 
     private static final String TIME_TRIGGER = "⏰ Задать время начала сеанса";
-    private static final String TIME_FILTER_GUIDE = "Укажите желаемый диапазон времени начала сеанса" +
-        " в формате HH:MM-HH:MM, например 18:30-23:30";
+    private static final String TIME_FILTER_GUIDE = "Укажите желаемый диапазон времени начала сеанса"
+        + " в формате HH:MM-HH:MM, например 18:30-23:30";
 
     private static final String EXCLUDED_TRIGGER = "🚫 Задать нежелательные жанры";
     private static final String EXCLUDED_FILTER_GUIDE = "Укажите нежелательные жанры, например: Комедия, мелодрама";
@@ -52,8 +53,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String MANDATORY_GUIDE = "Укажите жанры для поиска, например: Триллер, драма\n";
 
     private static final String AI_TRIGGER = "🤖 Добавить AI-фильтр";
-    private static final String AI_GUIDE = "Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n" +
-        "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть...";
+    private static final String AI_GUIDE = "Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n"
+        + "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть...";
 
     private static final String EDIT_TRIGGER = "⚙️ Изменить текущие фильтры";
     private static final String EDIT_GUIDE = "Текущие фильтры. Для изменения введите номер фильтра.\n";
@@ -84,16 +85,11 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final long chatId = update.getMessage().getChatId();
         final String chatIdString = String.valueOf(chatId);
         final String text = update.getMessage().getText();
-        // Обработка главного меню
         if (TRIGGERS.contains(text)) {
             handleMainCommand(chatId, chatIdString, text);
-        }
-        // Обработка меню редактирования
-        else if (EDIT_COMMANDS.contains(text)) {
+        } else if (EDIT_COMMANDS.contains(text)) {
             handleEditCommand(chatId, chatIdString, text);
-        }
-        // Обработка пользовательского ввода
-        else {
+        } else {
             handleUserInput(chatId, chatIdString, text);
         }
     }
@@ -176,31 +172,46 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         switch (command) {
             case EDIT_EXCLUDED:
                 userStates.put(chatId, UserState.AWAITING_EXCLUDED);
-                String currentExcluded = excludedGenres.getOrDefault(chatId, "не заданы");
-                showMainKeyboard(chatIdStr, "Текущие исключения: " + currentExcluded + "\n\n" + EXCLUDED_FILTER_GUIDE);
+                final String currentExcluded = excludedGenres.getOrDefault(chatId, "не заданы");
+                showMainKeyboard(
+                    chatIdStr,
+                    String.format("Текущие исключения: %s\n\n%s", currentExcluded, EXCLUDED_FILTER_GUIDE)
+                );
                 break;
 
             case EDIT_MANDATORY:
                 userStates.put(chatId, UserState.AWAITING_MANDATORY);
-                String currentMandatory = mandatoryGenres.getOrDefault(chatId, "не заданы");
-                showMainKeyboard(chatIdStr, "Текущие предпочтения: " + currentMandatory + "\n\n" + MANDATORY_GUIDE);
+                final String currentMandatory = mandatoryGenres.getOrDefault(chatId, "не заданы");
+                showMainKeyboard(
+                    chatIdStr,
+                    String.format("Текущие предпочтения: %s\n\n%s", currentMandatory, MANDATORY_GUIDE)
+                );
                 break;
 
             case EDIT_TIME:
                 userStates.put(chatId, UserState.AWAITING_TIME);
-                String currentTime = timeFilters.getOrDefault(chatId, "не задано");
-                showMainKeyboard(chatIdStr, "Текущее время: " + currentTime + "\n\n" + TIME_FILTER_GUIDE);
+                final String currentTime = timeFilters.getOrDefault(chatId, "не задано");
+                showMainKeyboard(
+                    chatIdStr,
+                    String.format("Текущее время: %s\n\n%s", currentTime, TIME_FILTER_GUIDE)
+                );
                 break;
 
             case EDIT_AI:
                 userStates.put(chatId, UserState.AWAITING_AI);
-                String currentAI = aiPrompts.getOrDefault(chatId, "не задан");
-                showMainKeyboard(chatIdStr, "Текущий AI-запрос: " + currentAI + "\n\n" + AI_GUIDE);
+                final String currentPrompt = aiPrompts.getOrDefault(chatId, "не задан");
+                showMainKeyboard(
+                    chatIdStr,
+                    String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, AI_GUIDE)
+                );
                 break;
 
             case BACK_COMMAND:
                 userStates.put(chatId, UserState.IDLE);
                 showMainKeyboard(chatIdStr, "Возврат в главное меню");
+                break;
+
+            default:
                 break;
         }
     }
@@ -309,7 +320,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             filters.addFilter(llmFilter);
         }
         final AfishaParser parser = new AfishaParser();
-        final Map<String, String> films = parseTodayFilms();
+        final Map<String, String> films = AfishaParser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();
         for (final Map.Entry<String, String> entry : films.entrySet()) {
             sessions.addAll(parser.parseSchedule(entry.getValue()));

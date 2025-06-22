@@ -12,8 +12,11 @@ public record Session(
     LocalTime dateTime, String name, String description, String verdict,
     List<String> genres, String cinema, String address, int price, String link) {
 
+    /**
+     * Group of sessions of specific movie.
+     */
     public record MovieGroup(
-        String filmName, List<String> genres, String verdict, String description, List<Session> sessions
+        String movieName, List<String> genres, String verdict, String description, List<Session> sessions
     ) {}
 
     public static String toString(final List<Session> sessions) {
@@ -35,13 +38,13 @@ public record Session(
                     sortedSessions);
             })
             .sorted(Comparator.comparing(
-                MovieGroup::filmName,
+                MovieGroup::movieName,
                 String.CASE_INSENSITIVE_ORDER
             ))
             .toList();
 
         for (final MovieGroup group : movieGroups) {
-            builder.append("Film: ").append(group.filmName()).append("\n");
+            builder.append("Film: ").append(group.movieName()).append("\n");
             builder.append("Genres: ");
             builder.append(
                 group.genres()
@@ -89,7 +92,7 @@ public record Session(
                     sortedSessions);
             })
             .sorted(Comparator.comparing(
-                MovieGroup::filmName,
+                MovieGroup::movieName,
                 String.CASE_INSENSITIVE_ORDER
             ))
             .toList();
@@ -97,7 +100,7 @@ public record Session(
         builder.setLength(0);
 
         for (final MovieGroup group : movieGroups) {
-            builder.append("Film: ").append(group.filmName()).append("\n");
+            builder.append("Film: ").append(group.movieName()).append("\n");
             builder.append("Genres: ");
             builder.append(
                 group.genres()
