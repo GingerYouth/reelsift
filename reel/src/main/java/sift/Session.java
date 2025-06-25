@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /** Session DTO. */
-@SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
+@SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 public record Session(
     LocalTime dateTime, String name, String description, String verdict,
     List<String> genres, String cinema, String address, int price, String link) {
