@@ -22,7 +22,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 /** Telegram bot logic. */
-@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+@SuppressWarnings({"PMD.AvoidThrowingRawExceptionTypes", "PMD.ConsecutiveLiteralAppends"})
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
