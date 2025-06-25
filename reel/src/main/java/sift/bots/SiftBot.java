@@ -22,7 +22,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 /** Telegram bot logic. */
-@SuppressWarnings("PMD.AvoidEscapedUnicodeCharacters")
+@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
@@ -68,6 +68,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String EDIT_AI = "Изменить AI-запрос";
     private static final String BACK_COMMAND = "🔙 Назад";
 
+    public static final String NOT_SET_UP = "не заданы";
+
     private static final Set<String> TRIGGERS = Set.of(
         TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
         AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER
@@ -94,7 +96,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void handleMainCommand(long chatId, final String chatIdStr, final String command) {
+    private void handleMainCommand(final long chatId, final String chatIdStr, final String command) {
         switch (command) {
             case EXCLUDED_TRIGGER:
                 this.userStates.put(chatId, UserState.AWAITING_EXCLUDED);
@@ -135,7 +137,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void handleUserInput(long chatId, String chatIdStr, String input) {
+    private void handleUserInput(final long chatId, final String chatIdStr, final String input) {
         final UserState state = userStates.getOrDefault(chatId, UserState.IDLE);
 
         switch (state) {
@@ -168,11 +170,11 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private void handleEditCommand(long chatId, final String chatIdStr, final String command) {
+    private void handleEditCommand(final long chatId, final String chatIdStr, final String command) {
         switch (command) {
             case EDIT_EXCLUDED:
                 userStates.put(chatId, UserState.AWAITING_EXCLUDED);
-                final String currentExcluded = excludedGenres.getOrDefault(chatId, "не заданы");
+                final String currentExcluded = excludedGenres.getOrDefault(chatId, NOT_SET_UP);
                 showMainKeyboard(
                     chatIdStr,
                     String.format("Текущие исключения: %s\n\n%s", currentExcluded, EXCLUDED_FILTER_GUIDE)
@@ -181,7 +183,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
             case EDIT_MANDATORY:
                 userStates.put(chatId, UserState.AWAITING_MANDATORY);
-                final String currentMandatory = mandatoryGenres.getOrDefault(chatId, "не заданы");
+                final String currentMandatory = mandatoryGenres.getOrDefault(chatId, NOT_SET_UP);
                 showMainKeyboard(
                     chatIdStr,
                     String.format("Текущие предпочтения: %s\n\n%s", currentMandatory, MANDATORY_GUIDE)
@@ -190,7 +192,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
             case EDIT_TIME:
                 userStates.put(chatId, UserState.AWAITING_TIME);
-                final String currentTime = timeFilters.getOrDefault(chatId, "не задано");
+                final String currentTime = timeFilters.getOrDefault(chatId, NOT_SET_UP);
                 showMainKeyboard(
                     chatIdStr,
                     String.format("Текущее время: %s\n\n%s", currentTime, TIME_FILTER_GUIDE)
@@ -199,7 +201,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
             case EDIT_AI:
                 userStates.put(chatId, UserState.AWAITING_AI);
-                final String currentPrompt = aiPrompts.getOrDefault(chatId, "не задан");
+                final String currentPrompt = aiPrompts.getOrDefault(chatId, NOT_SET_UP);
                 showMainKeyboard(
                     chatIdStr,
                     String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, AI_GUIDE)
@@ -254,8 +256,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void showEditMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
-        final StringBuilder builder = new StringBuilder("⚙️ <b>Текущие фильтры:</b>\n");
-        builder.append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
+        final StringBuilder builder = new StringBuilder(120);
+        builder.append("⚙️ <b>Текущие фильтры:</b>\n")
+            .append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
             .append("\n🚫 <b>Исключения:</b> ").append(this.excludedGenres.getOrDefault(chatId, "не заданы"))
             .append("\n✅ <b>Предпочтения:</b> ").append(this.mandatoryGenres.getOrDefault(chatId, "не заданы"))
             .append("\n🤖 <b>AI-запрос:</b> ").append(this.aiPrompts.getOrDefault(chatId, "не задан"));
@@ -287,6 +290,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         this.sendMessage(message);
     }
 
+    // TODO:: Remove
+    @SuppressWarnings("PMD.EmptyControlStatement")
     private void startSearch(final String chatIdString, final long chatId) throws IOException {
         final Filters filters = new Filters();
         if (this.timeFilters.containsKey(chatId)) {

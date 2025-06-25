@@ -74,7 +74,7 @@ public record Session(
 
     public static List<String> toSplitStrings(final List<Session> sessions) {
         final List<String> result = new ArrayList<>();
-        final StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder(60);
 
         final Map<String, List<Session>> groupedByName = sessions.stream()
             .collect(Collectors.groupingBy(Session::name));
@@ -100,17 +100,17 @@ public record Session(
         builder.setLength(0);
 
         for (final MovieGroup group : movieGroups) {
-            builder.append("Film: ").append(group.movieName()).append("\n");
-            builder.append("Genres: ");
-            builder.append(
-                group.genres()
-                    .stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", "))
-            );
-            builder.append("Verdict: ").append(group.verdict()).append("\n");
-            builder.append("Description: ").append(group.description).append("\n");
-            builder.append("Sessions: ").append("\n");
+            builder.append("Film: ").append(group.movieName()).append('\n')
+                .append("Genres: ")
+                .append(
+                    group.genres()
+                        .stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "))
+                )
+                .append("Verdict: ").append(group.verdict()).append('\n')
+                .append("Description: ").append(group.description).append('\n')
+                .append("Sessions: ").append('\n');
             result.add(builder.toString());
             builder.setLength(0);
 
