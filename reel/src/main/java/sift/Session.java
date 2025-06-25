@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /** Session DTO. */
-@SuppressWarnings("PMD.ConsecutiveLiteralAppends")
+@SuppressWarnings("PMD.ConsecutiveAppendsShouldReuse")
 public record Session(
     LocalTime dateTime, String name, String description, String verdict,
     List<String> genres, String cinema, String address, int price, String link) {
@@ -45,17 +45,17 @@ public record Session(
             .toList();
 
         for (final MovieGroup group : movieGroups) {
-            builder.append("Film: ").append(group.movieName()).append('\n');
-            builder.append("Genres: ");
-            builder.append(
-                group.genres()
-                    .stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", "))
-            );
-            builder.append("Verdict: ").append(group.verdict()).append('\n');
-            builder.append("Description: ").append(group.description).append('\n');
-            builder.append("Sessions: ").append('\n');
+            builder.append("Film: ").append(group.movieName()).append('\n')
+                .append("Genres: ")
+                .append(
+                    group.genres()
+                        .stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "))
+                )
+                .append("Verdict: ").append(group.verdict()).append('\n')
+                .append("Description: ").append(group.description).append('\n')
+                .append("Sessions: ").append('\n');
             for (final Session session : group.sessions()) {
                 builder.append(
                     String.format(
