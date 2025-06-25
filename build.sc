@@ -22,11 +22,13 @@ def lineCount: T[Int] = Task {
 }
 
 object reel extends JavaModule with CheckstyleModule {
-  def mainClass = Some("main.java.sift.Main")
+  def mainClass = Some("reel.src.main.java.sift.Main")
   def checkstyleVersion = "10.25.0"
 
   def ivyDeps = Agg(
     ivy"org.jsoup:jsoup:1.20.1",
-    ivy"org.json:json:20250517"
+    ivy"org.json:json:20250517",
+    ivy"org.telegram:telegrambots-longpolling:8.3.0",
+    ivy"org.telegram:telegrambots-client:8.3.0"
   )
 }

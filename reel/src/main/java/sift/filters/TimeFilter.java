@@ -1,8 +1,9 @@
-package main.java.sift;
+package main.java.sift.filters;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
+import main.java.sift.Session;
 
 /** Time filter. */
 @SuppressWarnings("PMD.ShortVariable")

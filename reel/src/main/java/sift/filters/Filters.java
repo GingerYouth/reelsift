@@ -1,11 +1,17 @@
-package main.java.sift;
+package main.java.sift.filters;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import main.java.sift.Session;
 
 /** Filters. */
 public class Filters {
     private final List<Filter> filters;
+
+    public Filters() {
+        this.filters = new ArrayList<>();
+    }
 
     public Filters(final List<Filter> filters) {
         this.filters = filters;
@@ -13,6 +19,10 @@ public class Filters {
 
     public Filters(final Filter... filters) {
         this.filters = List.of(filters);
+    }
+
+    public void addFilter(final Filter filter) {
+        this.filters.add(filter);
     }
 
     public List<Session> filter(final List<Session> shows) {

@@ -1,6 +1,7 @@
-package main.java.sift;
+package main.java.sift.filters;
 
 import java.util.stream.Stream;
+import main.java.sift.Session;
 
 /** Filter interface. */
 public interface Filter {
