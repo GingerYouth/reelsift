@@ -61,7 +61,6 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         + "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть...";
 
     private static final String EDIT_TRIGGER = "⚙️ Изменить текущие фильтры";
-    private static final String EDIT_GUIDE = "Текущие фильтры. Для изменения введите номер фильтра.\n";
 
     private static final String SEARCH_TRIGGER = "\uD83D\uDD0D Поиск!";
     private static final String SEARCH_GUIDE = "Пожалуйста, ожидайте...\n";
@@ -147,27 +146,27 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         switch (state) {
             case AWAITING_EXCLUDED:
                 final Genre.ParseResult excludedResult = Genre.parseGenres(input);
-                if (!excludedResult.invalidGenres().isEmpty()) {
-                    String errorMessage = createGenreErrorMessage(excludedResult.invalidGenres());
-                    showMainKeyboard(chatIdStr, errorMessage);
-                } else {
+                if (excludedResult.invalidGenres().isEmpty()) {
                     this.excludedGenres.put(chatId, excludedResult.validGenres());
                     this.userStates.put(chatId, UserState.IDLE);
-                    String display = Genre.toStringOrDefault(excludedResult.validGenres(), "");
+                    final String display = Genre.toStringOrDefault(excludedResult.validGenres(), "");
                     showMainKeyboard(chatIdStr, "✅ Нежелательные жанры сохранены: " + display);
+                } else {
+                    final String errorMessage = createGenreErrorMessage(excludedResult.invalidGenres());
+                    showMainKeyboard(chatIdStr, errorMessage);
                 }
                 break;
 
             case AWAITING_MANDATORY:
-                Genre.ParseResult mandatoryResult = Genre.parseGenres(input);
-                if (!mandatoryResult.invalidGenres().isEmpty()) {
-                    String errorMessage = createGenreErrorMessage(mandatoryResult.invalidGenres());
-                    showMainKeyboard(chatIdStr, errorMessage);
-                } else {
+                final Genre.ParseResult mandatoryResult = Genre.parseGenres(input);
+                if (mandatoryResult.invalidGenres().isEmpty()) {
                     this.mandatoryGenres.put(chatId, mandatoryResult.validGenres());
                     this.userStates.put(chatId, UserState.IDLE);
-                    String display = Genre.toStringOrDefault(mandatoryResult.validGenres(), "");
+                    final String display = Genre.toStringOrDefault(mandatoryResult.validGenres(), "");
                     showMainKeyboard(chatIdStr, "✅ Обязательные жанры сохранены: " + display);
+                } else {
+                    final String errorMessage = createGenreErrorMessage(mandatoryResult.invalidGenres());
+                    showMainKeyboard(chatIdStr, errorMessage);
                 }
                 break;
 
@@ -188,9 +187,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private String createGenreErrorMessage(Set<String> invalidGenres) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("❌ Не распознаны жанры: ")
+    private String createGenreErrorMessage(final Set<String> invalidGenres) {
+        final StringBuilder builder = new StringBuilder(50);
+        builder.append("❌ Не распознаны жанры: ")
             .append(String.join(", ", invalidGenres))
             .append("\n\n\uD83D\uDCCB Доступные жанры:\n");
 
@@ -202,10 +201,10 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         for (int i = 0; i < mid; i++) {
             final String left = allGenres.get(i);
             final String right = (i + mid < allGenres.size()) ? allGenres.get(i + mid) : "";
-            sb.append(String.format("%-20s %s%n", left, right));
+            builder.append(String.format("%-20s %s%n", left, right));
         }
 
-        return sb.toString();
+        return builder.toString();
     }
 
     private void handleEditCommand(final long chatId, final String chatIdStr, final String command) {
@@ -346,9 +345,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         this.sendMessage(message);
     }
 
-    // TODO:: Remove
-    @SuppressWarnings("PMD.EmptyControlStatement")
     private void startSearch(final String chatIdString, final long chatId) throws IOException {
+        sendMessage(chatIdString, SEARCH_GUIDE);
         final Filters filters = new Filters();
         if (this.timeFilters.containsKey(chatId)) {
             filters.addFilter(

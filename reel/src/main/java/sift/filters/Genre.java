@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,7 +69,7 @@ public enum Genre {
         final Set<String> invalidGenres = new HashSet<>();
 
         for (final String genreStr : input.split(",")) {
-            final String normalized = genreStr.trim().toLowerCase();
+            final String normalized = genreStr.trim().toLowerCase(Locale.ROOT);
             if (normalized.isEmpty()) {
                 continue;
             }
@@ -89,7 +90,7 @@ public enum Genre {
             return Optional.empty();
         }
 
-        final String normalized = text.trim().toLowerCase();
+        final String normalized = text.trim().toLowerCase(Locale.ROOT);
         for (final Genre genre : values()) {
             if (genre.name().equalsIgnoreCase(normalized)) {
                 return Optional.of(genre);
