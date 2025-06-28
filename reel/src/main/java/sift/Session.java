@@ -101,29 +101,28 @@ public record Session(
         builder.setLength(0);
 
         for (final MovieGroup group : movieGroups) {
-            builder.append("Film: ").append(group.movieName()).append('\n')
-                .append("Genres: ")
+            builder.append("<b>Фильм:</b> ").append(group.movieName()).append('\n')
+                .append("<b>Жанры:</b> ")
                 .append(
                     group.genres()
                         .stream()
                         .map(Object::toString)
                         .collect(Collectors.joining(", "))
                 )
-                .append("Verdict: ").append(group.verdict()).append('\n')
-                .append("Description: ").append(group.description).append('\n')
-                .append("Sessions: ").append('\n');
+                .append("\n<b>О чём:</b> ").append(group.verdict()).append('\n')
+                .append("<b>Описание:</b> ").append(group.description).append('\n')
+                .append("<b>Сеансы:</b> ").append('\n');
             result.add(builder.toString());
             builder.setLength(0);
 
             for (final Session session : group.sessions()) {
                 builder.append(
                     String.format(
-                        "  %s at %s (Address: %s), Price: %d RUB, Link: %s%n",
+                        "  %s в %s (Адрес: <i>%s</i>), Цена: %d RUB",
                         session.dateTime(),
                         session.cinema(),
                         session.address(),
-                        session.price(),
-                        session.link()
+                        session.price()
                     )
                 );
                 result.add(builder.toString());
