@@ -194,7 +194,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             .append("\n\n\uD83D\uDCCB Доступные жанры:\n");
 
         // Group genres in columns for better readability
-        final List<String> allGenres = new ArrayList<>(Genre.displayNames());
+        final List<String> allGenres = new ArrayList<>(Genre.getDisplayNames());
         Collections.sort(allGenres);
 
         final int mid = (allGenres.size() + 1) / 2;
@@ -220,7 +220,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                     chatIdStr,
                     String.format(
                         "Текущие исключения: %s\n\n%s",
-                        excludedAsStr.isEmpty() ? "не заданы" : excludedAsStr,
+                        excludedAsStr.isEmpty() ? NOT_SET_UP : excludedAsStr,
                         EXCLUDED_FILTER_GUIDE
                     )
                 );
@@ -313,9 +313,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
             .append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
             .append("\n🚫 <b>Исключения:</b> ")
-            .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), "не заданы"))
+            .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), NOT_SET_UP))
             .append("\n✅ <b>Предпочтения:</b> ")
-            .append(Genre.toStringOrDefault(this.mandatoryGenres.get(chatId), "не заданы"))
+            .append(Genre.toStringOrDefault(this.mandatoryGenres.get(chatId), NOT_SET_UP))
             .append("\n🤖 <b>AI-запрос:</b> ").append(this.aiPrompts.getOrDefault(chatId, "не задан"));
 
         final SendMessage message = new SendMessage(chatIdStr, builder.toString());
@@ -360,7 +360,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             filters.addFilter(
                 new MandatoryGenres(
                     this.mandatoryGenres.get(chatId).stream()
-                        .map(Genre::displayName)
+                        .map(Genre::getDisplayName)
                         .collect(Collectors.toList())
                 )
             );
@@ -369,7 +369,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             filters.addFilter(
                 new MandatoryGenres(
                     this.excludedGenres.get(chatId).stream()
-                        .map(Genre::displayName)
+                        .map(Genre::getDisplayName)
                         .collect(Collectors.toList())
                 )
             );

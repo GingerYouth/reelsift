@@ -47,13 +47,13 @@ public enum Genre {
         this.aliases = Set.of(aliases);
     }
 
-    public String displayName() {
+    public String getDisplayName() {
         return this.displayName;
     }
 
-    public static List<String> displayNames() {
+    public static List<String> getDisplayNames() {
         return Arrays.stream(values())
-            .map(Genre::displayName)
+            .map(Genre::getDisplayName)
             .collect(Collectors.toList());
     }
 
@@ -110,7 +110,7 @@ public enum Genre {
             return defaultValue;
         }
         return genres.stream()
-            .map(Genre::displayName)
+            .map(Genre::getDisplayName)
             .collect(Collectors.joining(", "));
     }
 }
