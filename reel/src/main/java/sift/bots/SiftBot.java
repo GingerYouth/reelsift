@@ -273,6 +273,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void sendMessage(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
+        sendMessage.setParseMode("HTML");
         try {
             this.telegramClient.execute(sendMessage);
         } catch (TelegramApiException tgApiEx) {
@@ -281,6 +282,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private void sendMessage(final SendMessage message) {
+        message.setParseMode("HTML");
         try {
             this.telegramClient.execute(message);
         } catch (TelegramApiException tgApiEx) {
@@ -288,11 +290,10 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    public void showMainKeyboard(final String chatId, final String message) {
+    private void showMainKeyboard(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         final List<KeyboardRow> keyboard = new ArrayList<>();
         KeyboardRow row = new KeyboardRow();
-        // TODO:: Add emojis
         row.add(TIME_TRIGGER);
         row.add(EXCLUDED_TRIGGER);
         row.add(MANDATORY_TRIGGER);
