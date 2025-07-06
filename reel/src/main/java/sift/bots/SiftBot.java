@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +30,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 /** Telegram bot logic. */
-@SuppressWarnings({"PMD.AvoidThrowingRawExceptionTypes", "PMD.ConsecutiveLiteralAppends"})
+@SuppressWarnings({
+    "PMD.AvoidThrowingRawExceptionTypes",
+    "PMD.ConsecutiveLiteralAppends",
+    "PMD.TooManyMethods", "PMD.GodClass",
+    "PMD.CouplingBetweenObjects"
+})
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
@@ -87,7 +91,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     public static final String NOT_SET_UP = "не заданы";
 
     private static final Set<String> TRIGGERS = Set.of(
-        DATE_TRIGGER,TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
+        DATE_TRIGGER, TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
         AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER
     );
 
@@ -112,6 +116,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     private void handleMainCommand(final long chatId, final String chatIdStr, final String command) {
         switch (command) {
             case DATE_TRIGGER:
@@ -234,15 +239,11 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private LocalDate parseSingleDate(final String dateStr) {
-        try {
-            final LocalDate date = MonthDay.parse(dateStr, DATE_FORMATTER).atYear(Year.now().getValue());
-            if (date.isBefore(LocalDate.now())) {
-                throw new IllegalArgumentException("Invalid date format");
-            }
-            return date;
-        } catch (final DateTimeParseException e) {
+        final LocalDate date = MonthDay.parse(dateStr, DATE_FORMATTER).atYear(Year.now().getValue());
+        if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Invalid date format");
         }
+        return date;
     }
 
     private String createGenreErrorMessage(final Set<String> invalidGenres) {
@@ -379,7 +380,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void showEditMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
-        final StringBuilder builder = new StringBuilder(120);
+        final StringBuilder builder = new StringBuilder(140);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
             .append("\n📅 <b>Дата:</b> ")
             .append(this.dateFilters.containsKey(chatId) ? dateFilters.get(chatId) : "сегодня")

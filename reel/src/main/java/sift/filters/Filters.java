@@ -7,6 +7,7 @@ import main.java.sift.Session;
 
 /** Filters. */
 public class Filters {
+    @SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
     private final List<Filter> filters;
 
     public Filters() {
