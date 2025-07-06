@@ -1,6 +1,11 @@
 package main.java.sift.bots;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.Year;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +36,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
     private enum UserState {
+        AWAITING_DATE,
         AWAITING_TIME,
         AWAITING_EXCLUDED,
         AWAITING_MANDATORY,
@@ -41,6 +47,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
+    private final Map<Long, String> dateFilters = new ConcurrentHashMap<>();
     private final Map<Long, String> timeFilters = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> excludedGenres = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
@@ -65,6 +72,12 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String SEARCH_TRIGGER = "\uD83D\uDD0D Поиск!";
     private static final String SEARCH_GUIDE = "Пожалуйста, ожидайте...\n";
 
+    private static final String DATE_TRIGGER = "📅 Задать дату";
+    private static final String DATE_GUIDE = "Укажите дату в формате ДД.ММ либо диапазон дат в формате ДД.ММ-ДД.ММ\n"
+        + "По умолчанию используется сегодняшняя дата.";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
+
+    private static final String EDIT_DATE = "Изменить дату";
     private static final String EDIT_TIME = "Изменить время";
     private static final String EDIT_EXCLUDED = "Изменить исключения";
     private static final String EDIT_MANDATORY = "Изменить предпочтения";
@@ -74,12 +87,12 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     public static final String NOT_SET_UP = "не заданы";
 
     private static final Set<String> TRIGGERS = Set.of(
-        TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
+        DATE_TRIGGER,TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
         AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER
     );
 
     private static final Set<String> EDIT_COMMANDS = Set.of(
-        EDIT_TIME, EDIT_EXCLUDED, EDIT_MANDATORY, EDIT_AI, BACK_COMMAND
+        EDIT_DATE, EDIT_TIME, EDIT_EXCLUDED, EDIT_MANDATORY, EDIT_AI, BACK_COMMAND
     );
 
     @Override
@@ -101,6 +114,11 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void handleMainCommand(final long chatId, final String chatIdStr, final String command) {
         switch (command) {
+            case DATE_TRIGGER:
+                this.userStates.put(chatId, UserState.AWAITING_DATE);
+                this.showMainKeyboard(chatIdStr, DATE_GUIDE);
+                break;
+
             case EXCLUDED_TRIGGER:
                 this.userStates.put(chatId, UserState.AWAITING_EXCLUDED);
                 this.showMainKeyboard(chatIdStr, EXCLUDED_FILTER_GUIDE);
@@ -144,6 +162,17 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final UserState state = userStates.getOrDefault(chatId, UserState.IDLE);
 
         switch (state) {
+            case AWAITING_DATE:
+                try {
+                    final String validated = validateDateInput(input);
+                    this.dateFilters.put(chatId, validated);
+                    this.userStates.put(chatId, UserState.IDLE);
+                    showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + validated);
+                } catch (final IllegalArgumentException e) {
+                    showMainKeyboard(chatIdStr, "❌ Неверный формат даты. " + DATE_GUIDE);
+                }
+                break;
+
             case AWAITING_EXCLUDED:
                 final Genre.ParseResult excludedResult = Genre.parseGenres(input);
                 if (excludedResult.invalidGenres().isEmpty()) {
@@ -184,6 +213,35 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
             default:
                 showMainKeyboard(chatIdStr, "Выберите действие из меню:");
+        }
+    }
+
+    private String validateDateInput(final String input) {
+        final String[] parts = input.split("-");
+        if (parts.length == 1) {
+            final LocalDate start = parseSingleDate(parts[0].trim());
+            return String.format("%s-%s", start, start);
+        }
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid date format!");
+        }
+        final LocalDate start = parseSingleDate(parts[0].trim());
+        final LocalDate end = parseSingleDate(parts[1].trim());
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("End date before start date!");
+        }
+        return input;
+    }
+
+    private LocalDate parseSingleDate(final String dateStr) {
+        try {
+            final LocalDate date = MonthDay.parse(dateStr, DATE_FORMATTER).atYear(Year.now().getValue());
+            if (date.isBefore(LocalDate.now())) {
+                throw new IllegalArgumentException("Invalid date format");
+            }
+            return date;
+        } catch (final DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format");
         }
     }
 
@@ -244,7 +302,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 break;
 
             case EDIT_TIME:
-                userStates.put(chatId, UserState.AWAITING_TIME);
+                this.userStates.put(chatId, UserState.AWAITING_TIME);
                 final String currentTime = timeFilters.getOrDefault(chatId, NOT_SET_UP);
                 showMainKeyboard(
                     chatIdStr,
@@ -293,16 +351,27 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private void showMainKeyboard(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         final List<KeyboardRow> keyboard = new ArrayList<>();
-        KeyboardRow row = new KeyboardRow();
-        row.add(TIME_TRIGGER);
-        row.add(EXCLUDED_TRIGGER);
-        row.add(MANDATORY_TRIGGER);
-        keyboard.add(row);
-        row = new KeyboardRow();
-        row.add(AI_TRIGGER);
-        row.add(EDIT_TRIGGER);
-        row.add(SEARCH_TRIGGER);
-        keyboard.add(row);
+
+        final KeyboardRow row1 = new KeyboardRow();
+        row1.add(TIME_TRIGGER);
+        row1.add(DATE_TRIGGER);
+
+        final KeyboardRow row2 = new KeyboardRow();
+        row2.add(EXCLUDED_TRIGGER);
+        row2.add(MANDATORY_TRIGGER);
+
+        final KeyboardRow row3 = new KeyboardRow();
+        row3.add(AI_TRIGGER);
+        row3.add(EDIT_TRIGGER);
+
+        final KeyboardRow row4 = new KeyboardRow();
+        row4.add(SEARCH_TRIGGER);
+
+        keyboard.add(row1);
+        keyboard.add(row2);
+        keyboard.add(row3);
+        keyboard.add(row4);
+
         final ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(keyboard);
         sendMessage.setReplyMarkup(keyboardMarkup);
         this.sendMessage(sendMessage);
@@ -312,6 +381,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final long chatId = Long.parseLong(chatIdStr);
         final StringBuilder builder = new StringBuilder(120);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
+            .append("\n📅 <b>Дата:</b> ")
+            .append(this.dateFilters.containsKey(chatId) ? dateFilters.get(chatId) : "сегодня")
             .append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
             .append("\n🚫 <b>Исключения:</b> ")
             .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), NOT_SET_UP))
@@ -323,15 +394,20 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         message.setParseMode("HTML");
 
         final List<KeyboardRow> keyboard = new ArrayList<>();
+
+        // Row 1: Date and Time
         final KeyboardRow row1 = new KeyboardRow();
+        row1.add(EDIT_DATE);
         row1.add(EDIT_TIME);
-        row1.add(EDIT_EXCLUDED);
 
+        // Row 2: Genres
         final KeyboardRow row2 = new KeyboardRow();
+        row2.add(EDIT_EXCLUDED);
         row2.add(EDIT_MANDATORY);
-        row2.add(EDIT_AI);
 
+        // Row 3: AI
         final KeyboardRow row3 = new KeyboardRow();
+        row3.add(EDIT_AI);
         row3.add(BACK_COMMAND);
 
         keyboard.add(row1);
@@ -380,7 +456,10 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             filters.addFilter(llmFilter);
         }
         final AfishaParser parser = new AfishaParser();
-        final Map<String, String> films = AfishaParser.parseTodayFilms();
+        final String date = this.dateFilters.get(chatId);
+        final Map<String, String> films = date != null
+            ? AfishaParser.parseFilmsInDates(date)
+            : AfishaParser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();
         for (final Map.Entry<String, String> entry : films.entrySet()) {
             sessions.addAll(parser.parseSchedule(entry.getValue()));
