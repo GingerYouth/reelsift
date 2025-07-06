@@ -28,7 +28,8 @@ import org.jsoup.nodes.Element;
 public class AfishaParser {
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
-    private static final String TODAY_FILMS_PAGE_N = "https://www.afisha.ru/msk/schedule_cinema/na-segodnya/page%d/";
+    private static final String FILMS_PAGE_N = "https://www.afisha.ru/msk/schedule_cinema/%s/page%d/";
+    private static final String TODAY = "na-segodnya";
     public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
 
     private final String currentDatePeriod;
@@ -77,7 +78,34 @@ public class AfishaParser {
         int page = 0;
         do {
             try {
-                pageFilms = parseFilmsPage(String.format(TODAY_FILMS_PAGE_N, page));
+                pageFilms = parseFilmsPage(String.format(FILMS_PAGE_N, TODAY, page));
+                final Set<String> keySet = pageFilms.keySet();
+                if (prevFilms.equals(keySet)) {
+                    break;
+                }
+                prevFilms = keySet;
+                page++;
+                films.putAll(pageFilms);
+            } catch (final HttpStatusException httpEx) {
+                break;
+            }
+        } while (!pageFilms.isEmpty());
+        return films;
+    }
+
+    /**
+     * Parse films by provided dates.
+     *
+     * @return The map of film names to the link to the sessions
+     */
+    public static Map<String, String> parseFilmsInDates(final String dates) throws IOException {
+        final Map<String, String> films = new TreeMap<>();
+        Map<String, String> pageFilms;
+        Set<String> prevFilms = new HashSet<>();
+        int page = 0;
+        do {
+            try {
+                pageFilms = parseFilmsPage(String.format(FILMS_PAGE_N, dates, page));
                 final Set<String> keySet = pageFilms.keySet();
                 if (prevFilms.equals(keySet)) {
                     break;
