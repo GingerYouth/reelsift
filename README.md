@@ -4,7 +4,7 @@
 ReelSift is a Telegram bot and backend application that helps users find and filter movie showtimes using a combination of manual filters and AI-powered prompts. It scrapes Afisha.ru for today's films and enables users to specify their movie preferences directly via Telegram.
 
 ### How to use?
-Write to @ReelSiftBot in telegram.
+Write to @ReelSiftBot in telegram. [Current status: OFF]
 
 ## Features
 - **Telegram Bot Integration:** Interact with a Telegram bot to search for movies and set filters.
@@ -19,4 +19,5 @@ Write to @ReelSiftBot in telegram.
 - Java 24
 - Mill build tool
 - JSoup (web scraping)
+
 - TelegramBots library
