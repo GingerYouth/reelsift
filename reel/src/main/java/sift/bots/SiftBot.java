@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import main.java.sift.AfishaParser;
 import main.java.sift.PropertiesLoader;
 import main.java.sift.Session;
+import main.java.sift.cache.RedisCache;
+import main.java.sift.filters.DateInterval;
 import main.java.sift.filters.Filters;
 import main.java.sift.filters.Genre;
 import main.java.sift.filters.LlmFilter;
@@ -37,6 +39,9 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
     "PMD.CouplingBetweenObjects"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
+
+    private final RedisCache redisCache = new RedisCache("localhost", 6379); // Use your Redis host/port
+
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
     private enum UserState {
@@ -51,7 +56,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
-    private final Map<Long, String> dateFilters = new ConcurrentHashMap<>();
+    private final Map<Long, DateInterval> dateFilters = new ConcurrentHashMap<>();
     private final Map<Long, String> timeFilters = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> excludedGenres = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
@@ -169,8 +174,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         switch (state) {
             case AWAITING_DATE:
                 try {
-                    final String validated = validateDateInput(input);
-                    this.dateFilters.put(chatId, validated);
+                    final DateInterval dateInterval = validateDateInput(input);
+                    this.dateFilters.put(chatId, dateInterval);
                     this.userStates.put(chatId, UserState.IDLE);
                     showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + validated);
                 } catch (final IllegalArgumentException e) {
@@ -221,21 +226,18 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private String validateDateInput(final String input) {
+    private DateInterval validateDateInput(final String input) {
         final String[] parts = input.split("-");
         if (parts.length == 1) {
-            final LocalDate start = parseSingleDate(parts[0].trim());
-            return String.format("%s-%s", start, start);
+            final LocalDate date = parseSingleDate(parts[0].trim());
+            return new DateInterval(date, date);
         }
         if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid date format!");
         }
         final LocalDate start = parseSingleDate(parts[0].trim());
         final LocalDate end = parseSingleDate(parts[1].trim());
-        if (end.isBefore(start)) {
-            throw new IllegalArgumentException("End date before start date!");
-        }
-        return input;
+        return new DateInterval(start, end);
     }
 
     private LocalDate parseSingleDate(final String dateStr) {
@@ -383,7 +385,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final StringBuilder builder = new StringBuilder(140);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
             .append("\n📅 <b>Дата:</b> ")
-            .append(this.dateFilters.containsKey(chatId) ? dateFilters.get(chatId) : "сегодня")
+            .append(this.dateFilters.containsKey(chatId) ? this.dateFilters.get(chatId) : "сегодня")
             .append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
             .append("\n🚫 <b>Исключения:</b> ")
             .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), NOT_SET_UP))
@@ -456,15 +458,43 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             final LlmFilter llmFilter = new LlmFilter(this.aiPrompts.get(chatId));
             filters.addFilter(llmFilter);
         }
-        final AfishaParser parser = new AfishaParser();
-        final String date = this.dateFilters.get(chatId);
-        final Map<String, String> films = date != null
-            ? AfishaParser.parseFilmsInDates(date)
-            : AfishaParser.parseTodayFilms();
-        final List<Session> sessions = new ArrayList<>();
-        for (final Map.Entry<String, String> entry : films.entrySet()) {
-            sessions.addAll(parser.parseSchedule(entry.getValue()));
-        }
+
+        List<Session> sessions = this.redisCache.getCachedSessions();
+        final List<Session> currentSessions = sessions;
+
+            final AfishaParser parser = new AfishaParser();
+            final DateInterval dateInterval = this.dateFilters.get(chatId);
+
+            final List<LocalDate> allDates = dateInterval.getDatesInRange();
+            final List<LocalDate> missingDates = allDates.stream()
+                .filter(date ->
+                    currentSessions == null
+                        || currentSessions.stream().noneMatch(
+                            s -> s.dateTime().toLocalDate().equals(date))
+                )
+                .toList();
+
+
+
+
+            final Map<String, String> films = !missingDates.isEmpty()
+                ? AfishaParser.parseFilmsInDates(
+                    missingDates.stream()
+                        .map(d -> d.format(DATE_FORMATTER))
+                        .collect(Collectors.joining("-"))
+                )
+                : AfishaParser.parseTodayFilms();
+
+
+            final Map<String, String> films = date != null
+                ? AfishaParser.parseFilmsInDates(date)
+                : AfishaParser.parseTodayFilms();
+            for (final Map.Entry<String, String> entry : films.entrySet()) {
+                sessions = parser.parseSchedule(entry.getValue());
+            }
+            this.redisCache.cacheSessions(sessions);
+
+
         final List<Session> filtered = filters.filter(sessions);
         sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
 

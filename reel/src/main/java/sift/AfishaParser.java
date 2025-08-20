@@ -2,6 +2,7 @@ package main.java.sift;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class AfishaParser {
     public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
 
     private final String currentDatePeriod;
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("DD:HH:mm");
 
     private static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "
@@ -234,7 +235,7 @@ public class AfishaParser {
                 final JSONObject session = sessions.getJSONObject(j);
                 final String price = session.get("MinPriceFormatted").toString();
                 result.add(new Session(
-                    LocalTime.parse(session.get("Time").toString(), TIME_FORMATTER),
+                    LocalDateTime.parse(session.get("DateTime").toString()),
                     info.get("Name").toString(),
                     distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
                     info.get("Verdict").toString(),
