@@ -11,8 +11,8 @@ import main.java.sift.filters.MandatoryGenres;
 @SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
     public static void main(String[]args) throws Exception {
-        final AfishaParser parser = new AfishaParser();
-        final Map<String, String> films = AfishaParser.parseTodayFilms();
+        final AfishaParser parser = new AfishaParser(City.MOSCOW);
+        final Map<String, String> films = parser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();
         for (final Map.Entry<String, String> entry : films.entrySet()) {
             sessions.addAll(parser.parseSchedule(entry.getValue()));

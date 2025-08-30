@@ -21,4 +21,5 @@ Write to @ReelSiftBot in telegram. [Current status: OFF]
 - Mill build tool
 - JSoup
 - TelegramBots
-- Redis
+- Redis (Jedis)
+- DeepSeek API

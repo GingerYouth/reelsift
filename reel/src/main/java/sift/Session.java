@@ -15,8 +15,8 @@ import org.json.JSONObject;
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 public record Session(
     LocalDateTime dateTime, String name, String description, String verdict,
-    List<String> genres, String cinema, String address, int price, String link
-) {
+    List<String> genres, String cinema, String address, int price, String link,
+    boolean russianSubtitlesSession) {
 
     public static String toJson(final List<Session> sessions) {
         final JSONArray jsonArray = new JSONArray();
@@ -45,8 +45,8 @@ public record Session(
         if (json.charAt(0) == '[') {
             final JSONArray arr = new JSONArray(json);
             return IntStream.range(0, arr.length())
-                .mapToObj(i -> fromJson(arr.get(i).toString()))
-                .collect(Collectors.toList());
+                    .mapToObj(i -> fromJson(arr.get(i).toString()))
+                    .collect(Collectors.toList());
         } else if (json.charAt(0) == '{') {
             return Collections.singletonList(fromJson(json));
         } else {
@@ -66,7 +66,8 @@ public record Session(
         final String address = obj.getString("address");
         final int price = obj.getInt("price");
         final String link = obj.getString("link");
-        return new Session(dateTime, name, description, verdict, genres, cinema, address, price, link);
+        final boolean withSubs = obj.optBoolean("russianSubtitlesSession", false);
+        return new Session(dateTime, name, description, verdict, genres, cinema, address, price, link, withSubs);
     }
 
     /**
