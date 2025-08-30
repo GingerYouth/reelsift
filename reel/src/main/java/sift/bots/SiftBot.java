@@ -76,6 +76,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     public static final String SUBS_DIS_TRIGGER = "Отключить фильтр по фильмам с субтитрами";
 
     private static final String EDIT_TRIGGER = "⚙️ Изменить текущие фильтры";
+    private static final String DELETE_TRIGGER = "Удалить текущий фильтр";
 
     private static final String SEARCH_TRIGGER = "\uD83D\uDD0D Поиск!";
     private static final String SEARCH_GUIDE = "Пожалуйста, ожидайте...\n";
@@ -90,17 +91,33 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String EDIT_EXCLUDED = "Изменить исключения";
     private static final String EDIT_MANDATORY = "Изменить предпочтения";
     private static final String EDIT_AI = "Изменить AI-запрос";
+
+    private static final String DELETE_DATE = "Удалить дату";
+    private static final String DELETE_TIME = "Удалить время";
+    private static final String DELETE_EXCLUDED = "Удалить исключения";
+    private static final String DELETE_MANDATORY = "Удалить предпочтения";
+    private static final String DELETE_AI = "Удалить AI-запрос";
+    private static final String DELETE_SUB = "Удалить фильтр по субтитрам";
+    private static final String DELETE_ALL = "Удалить все фильтры";
+
     private static final String BACK_COMMAND = "🔙 Назад";
 
     public static final String NOT_SET_UP = "не заданы";
 
     private static final Set<String> TRIGGERS = Set.of(
         DATE_TRIGGER, TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
-        AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER, SUBS_EN_TRIGGER, SUBS_DIS_TRIGGER
+        AI_TRIGGER, EDIT_TRIGGER, DELETE_TRIGGER, SEARCH_TRIGGER,
+        SUBS_EN_TRIGGER, SUBS_DIS_TRIGGER
     );
 
     private static final Set<String> EDIT_COMMANDS = Set.of(
         EDIT_DATE, EDIT_TIME, EDIT_EXCLUDED, EDIT_MANDATORY, EDIT_AI, BACK_COMMAND
+    );
+
+    private static final Set<String> DELETE_COMMANDS = Set.of(
+        Delete.DATE, DELETE_TIME, DELETE_AI,
+        DELETE_EXCLUDED, DELETE_MANDATORY,
+        DELETE_SUB, DELETE_ALL, BACK_COMMAND
     );
 
     @Override
@@ -115,6 +132,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             handleMainCommand(chatId, chatIdString, text);
         } else if (EDIT_COMMANDS.contains(text)) {
             handleEditCommand(chatId, chatIdString, text);
+        } else if (DELETE_COMMANDS.contains(text)) {
+            handleDeleteCommand(chatId, chatIdString, text);
         } else {
             handleUserInput(chatId, chatIdString, text);
         }
@@ -342,6 +361,29 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
+    private void handleDeleteCommand(final long chatId, final String chatIdStr, final Delete command) {
+        switch (command) {
+            case Delete.EXCLUDED -> this.excludedGenres.remove(chatId);
+            case Delete.MANDATORY -> this.mandatoryGenres.remove(chatId);
+            case Delete.DATE -> this.dateFilters.remove(chatId);
+            case Delete.TIME ->
+            case Delete.AI -> this.aiPrompts.remove(chatId);
+            case Delete.SUBS -> this.subFilters.remove(chatId);
+            case Delete.ALL -> {
+                this.excludedGenres.remove(chatId);
+                this.mandatoryGenres.remove(chatId);
+                this.dateFilters.remove(chatId);
+                this.aiPrompts.remove(chatId);
+                this.subFilters.remove(chatId);
+            }
+            case BACK_COMMAND -> {
+                userStates.put(chatId, UserState.IDLE);
+                showMainKeyboard(chatIdStr, "Возврат в главное меню");
+            }
+            default -> {}
+        }
+    }
+
     private void sendMessage(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         sendMessage.setParseMode("HTML");
@@ -378,12 +420,21 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         row3.add(EDIT_TRIGGER);
 
         final KeyboardRow row4 = new KeyboardRow();
-        row4.add(SEARCH_TRIGGER);
+        row4.add(
+            this.subFilters.contains(Long.valueOf(chatId))
+                ? SUBS_DIS_TRIGGER
+                : SUBS_EN_TRIGGER
+        );
+        row4.add(DELETE_TRIGGER);
+
+        final KeyboardRow row5 = new KeyboardRow();
+        row5.add(SEARCH_TRIGGER);
 
         keyboard.add(row1);
         keyboard.add(row2);
         keyboard.add(row3);
         keyboard.add(row4);
+        keyboard.add(row5);
 
         final ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup(keyboard);
         sendMessage.setReplyMarkup(keyboardMarkup);
