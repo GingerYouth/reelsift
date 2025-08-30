@@ -18,7 +18,7 @@ public class RedisCache {
     private final Jedis jedis;
     public static final String KEY_PREFIX = "sessions:";
 
-    public RedisCache(String host, int port) {
+    public RedisCache(final String host, final int port) {
         this.jedis = new Jedis(host, port);
     }
 
@@ -41,6 +41,17 @@ public class RedisCache {
         }
     }
 
+    public List<Session> getCachedSessions(final List<LocalDate> dates) {
+        if (dates == null || dates.isEmpty()) {
+            return null;
+        }
+        return dates.stream()
+            .map(this::getCachedSessions)
+            .filter(sessions -> sessions != null && !sessions.isEmpty())
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+    }
+
     public List<Session> getCachedSessions(final LocalDate date) {
         if (date == null) {
             return null;
@@ -50,5 +61,11 @@ public class RedisCache {
             return null;
         }
         return Session.fromJsonArray(cached);
+    }
+
+    public List<LocalDate> getCachedDates() {
+        return this.jedis.keys(KEY_PREFIX + "*").stream()
+            .map(key -> LocalDate.parse(key.substring(KEY_PREFIX.length())))
+            .collect(Collectors.toList());
     }
 }

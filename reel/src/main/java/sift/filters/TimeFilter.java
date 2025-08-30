@@ -1,6 +1,7 @@
 package main.java.sift.filters;
 
 import java.time.LocalTime;
+import java.time.chrono.ChronoLocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 import main.java.sift.Session;
@@ -24,7 +25,7 @@ public class TimeFilter implements Filter {
     @Override
     public Stream<Session> filter(final Stream<Session> shows) {
         return shows
-            .filter(s -> s.dateTime().isAfter(this.from))
-            .filter(s -> s.dateTime().isBefore(this.to));
+            .filter(s -> s.dateTime().isAfter(ChronoLocalDateTime.from(this.from)))
+            .filter(s -> s.dateTime().isBefore(ChronoLocalDateTime.from(this.to)));
     }
 }

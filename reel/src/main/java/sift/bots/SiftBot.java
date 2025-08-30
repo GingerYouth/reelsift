@@ -7,6 +7,7 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -177,7 +178,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                     final DateInterval dateInterval = validateDateInput(input);
                     this.dateFilters.put(chatId, dateInterval);
                     this.userStates.put(chatId, UserState.IDLE);
-                    showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + validated);
+                    showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + dateInterval);
                 } catch (final IllegalArgumentException e) {
                     showMainKeyboard(chatIdStr, "❌ Неверный формат даты. " + DATE_GUIDE);
                 }
@@ -226,7 +227,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private DateInterval validateDateInput(final String input) {
+    private static DateInterval validateDateInput(final String input) {
         final String[] parts = input.split("-");
         if (parts.length == 1) {
             final LocalDate date = parseSingleDate(parts[0].trim());
@@ -240,7 +241,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         return new DateInterval(start, end);
     }
 
-    private LocalDate parseSingleDate(final String dateStr) {
+    private static LocalDate parseSingleDate(final String dateStr) {
         final LocalDate date = MonthDay.parse(dateStr, DATE_FORMATTER).atYear(Year.now().getValue());
         if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Invalid date format");
@@ -459,43 +460,28 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             filters.addFilter(llmFilter);
         }
 
-        List<Session> sessions = this.redisCache.getCachedSessions();
-        final List<Session> currentSessions = sessions;
+        final DateInterval dateInterval = this.dateFilters.get(chatId);
+        final DateInterval requitedDateInterval = dateInterval != null
+            ? dateInterval
+            : new DateInterval(LocalDate.now(), LocalDate.now());
+        final List<LocalDate> requiredDates = requitedDateInterval.getDatesInRange();
+        final List<LocalDate> cachedDates = this.redisCache.getCachedDates();
+        final List<LocalDate> missingDates = requiredDates.stream()
+            .filter(d -> !cachedDates.contains(d))
+            .toList();
 
-            final AfishaParser parser = new AfishaParser();
-            final DateInterval dateInterval = this.dateFilters.get(chatId);
-
-            final List<LocalDate> allDates = dateInterval.getDatesInRange();
-            final List<LocalDate> missingDates = allDates.stream()
-                .filter(date ->
-                    currentSessions == null
-                        || currentSessions.stream().noneMatch(
-                            s -> s.dateTime().toLocalDate().equals(date))
-                )
-                .toList();
-
-
-
-
-            final Map<String, String> films = !missingDates.isEmpty()
-                ? AfishaParser.parseFilmsInDates(
-                    missingDates.stream()
-                        .map(d -> d.format(DATE_FORMATTER))
-                        .collect(Collectors.joining("-"))
-                )
-                : AfishaParser.parseTodayFilms();
-
-
-            final Map<String, String> films = date != null
-                ? AfishaParser.parseFilmsInDates(date)
-                : AfishaParser.parseTodayFilms();
-            for (final Map.Entry<String, String> entry : films.entrySet()) {
-                sessions = parser.parseSchedule(entry.getValue());
+        for (final LocalDate missing : missingDates) {
+            // TODO:: Optimize by creating interval
+            final Map<String, String> missingMap = AfishaParser.parseFilmsInDates(missing.format(DATE_FORMATTER));
+            for (final Map.Entry<String, String> entry : missingMap.entrySet()) {
+                final List<Session> missingSessions = new AfishaParser().parseSchedule(entry.getValue());
+                this.redisCache.cacheSessions(missingSessions);
             }
-            this.redisCache.cacheSessions(sessions);
+        }
 
+        final List<Session> resultSessions = this.redisCache.getCachedSessions(requiredDates);
+        final List<Session> filtered = filters.filter(resultSessions);
 
-        final List<Session> filtered = filters.filter(sessions);
         sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
 
         for (final String split : Session.toSplitStrings(filtered)) {
