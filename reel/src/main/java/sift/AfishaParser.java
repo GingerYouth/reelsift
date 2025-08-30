@@ -242,7 +242,8 @@ public class AfishaParser {
                     place.getString("Name"),
                     place.get("Address").toString(),
                     "null".equals(price) ? -1 : Integer.parseInt(price),
-                    "link"
+                    "link",
+                    "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString()) ? true : false
                 ));
             }
         }

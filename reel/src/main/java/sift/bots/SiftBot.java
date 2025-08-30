@@ -56,6 +56,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final Map<Long, Set<Genre>> excludedGenres = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
     private final Map<Long, String> aiPrompts = new ConcurrentHashMap<>();
+    private final Set<Long> subFilters = ConcurrentHashMap.newKeySet();
 
     private static final String TIME_TRIGGER = "⏰ Задать время начала сеанса";
     private static final String TIME_FILTER_GUIDE = "Укажите желаемый диапазон времени начала сеанса"
@@ -70,6 +71,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private static final String AI_TRIGGER = "🤖 Добавить AI-фильтр";
     private static final String AI_GUIDE = "Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n"
         + "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть...";
+
+    public static final String SUBS_EN_TRIGGER = "Только фильмы с субтитрами";
+    public static final String SUBS_DIS_TRIGGER = "Отключить фильтр по фильмам с субтитрами";
 
     private static final String EDIT_TRIGGER = "⚙️ Изменить текущие фильтры";
 
@@ -92,7 +96,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private static final Set<String> TRIGGERS = Set.of(
         DATE_TRIGGER, TIME_TRIGGER, EXCLUDED_TRIGGER, MANDATORY_TRIGGER,
-        AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER
+        AI_TRIGGER, EDIT_TRIGGER, SEARCH_TRIGGER, SUBS_EN_TRIGGER, SUBS_DIS_TRIGGER
     );
 
     private static final Set<String> EDIT_COMMANDS = Set.of(
@@ -142,6 +146,14 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             case AI_TRIGGER:
                 this.userStates.put(chatId, UserState.AWAITING_AI);
                 this.showMainKeyboard(chatIdStr, AI_GUIDE);
+                break;
+
+            case SUBS_EN_TRIGGER:
+                this.subFilters.add(chatId);
+                break;
+
+            case SUBS_DIS_TRIGGER:
+                this.subFilters.remove(chatId);
                 break;
 
             case EDIT_TRIGGER:
@@ -389,7 +401,8 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), NOT_SET_UP))
             .append("\n✅ <b>Предпочтения:</b> ")
             .append(Genre.toStringOrDefault(this.mandatoryGenres.get(chatId), NOT_SET_UP))
-            .append("\n🤖 <b>AI-запрос:</b> ").append(this.aiPrompts.getOrDefault(chatId, "не задан"));
+            .append("\n🤖 <b>AI-запрос:</b> ").append(this.aiPrompts.getOrDefault(chatId, "не задан"))
+            .append("\n <b>Только фильмы с субтитрами: </b> ").append(this.subFilters.contains(chatId) ? "да" : "нет");
 
         final SendMessage message = new SendMessage(chatIdStr, builder.toString());
         message.setParseMode("HTML");
@@ -409,7 +422,11 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         // Row 3: AI
         final KeyboardRow row3 = new KeyboardRow();
         row3.add(EDIT_AI);
-        row3.add(BACK_COMMAND);
+        row3.add(this.subFilters.contains(chatId) ? SUBS_DIS_TRIGGER : SUBS_EN_TRIGGER);
+
+        // Row 4: back
+        final KeyboardRow row4 = new KeyboardRow();
+        row4.add(BACK_COMMAND);
 
         keyboard.add(row1);
         keyboard.add(row2);

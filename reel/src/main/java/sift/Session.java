@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 public record Session(
     LocalTime dateTime, String name, String description, String verdict,
-    List<String> genres, String cinema, String address, int price, String link) {
+    List<String> genres, String cinema, String address, int price, String link,
+    boolean russianSubtitlesSession) {
 
     /**
      * Group of sessions of specific movie.
