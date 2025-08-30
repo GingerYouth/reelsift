@@ -3,7 +3,6 @@ package main.java.sift;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +33,6 @@ public class AfishaParser {
     public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
 
     private final String currentDatePeriod;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("DD:HH:mm");
 
     private static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "

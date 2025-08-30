@@ -37,6 +37,7 @@ public class DateInterval {
         return dates;
     }
 
+    @Override
     public String toString() {
         return String.format("%s-%s", this.start, this.end);
     }

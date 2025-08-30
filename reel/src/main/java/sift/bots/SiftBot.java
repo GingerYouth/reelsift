@@ -7,7 +7,6 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +36,8 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
     "PMD.AvoidThrowingRawExceptionTypes",
     "PMD.ConsecutiveLiteralAppends",
     "PMD.TooManyMethods", "PMD.GodClass",
-    "PMD.CouplingBetweenObjects"
+    "PMD.CouplingBetweenObjects",
+    "PMD.ExcessiveImports"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
@@ -470,11 +470,12 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             .filter(d -> !cachedDates.contains(d))
             .toList();
 
+        final AfishaParser parser = new AfishaParser();
         for (final LocalDate missing : missingDates) {
             // TODO:: Optimize by creating interval
             final Map<String, String> missingMap = AfishaParser.parseFilmsInDates(missing.format(DATE_FORMATTER));
             for (final Map.Entry<String, String> entry : missingMap.entrySet()) {
-                final List<Session> missingSessions = new AfishaParser().parseSchedule(entry.getValue());
+                final List<Session> missingSessions = parser.parseSchedule(entry.getValue());
                 this.redisCache.cacheSessions(missingSessions);
             }
         }

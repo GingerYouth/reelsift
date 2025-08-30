@@ -40,7 +40,7 @@ public record Session(
 
     public static List<Session> fromJsonArray(final String json) {
         if (json == null || json.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
         if (json.charAt(0) == '[') {
             final JSONArray arr = new JSONArray(json);
@@ -51,7 +51,7 @@ public record Session(
             return Collections.singletonList(fromJson(json));
         } else {
             // TODO:: Log it
-            return null;
+            return Collections.emptyList();
         }
     }
 

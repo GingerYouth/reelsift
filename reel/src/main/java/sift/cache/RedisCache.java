@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,7 +44,7 @@ public class RedisCache {
 
     public List<Session> getCachedSessions(final List<LocalDate> dates) {
         if (dates == null || dates.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
         return dates.stream()
             .map(this::getCachedSessions)
@@ -54,11 +55,11 @@ public class RedisCache {
 
     public List<Session> getCachedSessions(final LocalDate date) {
         if (date == null) {
-            return null;
+            return Collections.emptyList();
         }
         final String cached = this.jedis.get(KEY_PREFIX + date);
         if (cached == null) {
-            return null;
+            return Collections.emptyList();
         }
         return Session.fromJsonArray(cached);
     }
