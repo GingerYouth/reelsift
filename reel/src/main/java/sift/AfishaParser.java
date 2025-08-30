@@ -2,7 +2,7 @@ package main.java.sift;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,12 +28,11 @@ import org.jsoup.nodes.Element;
 public class AfishaParser {
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
-    private static final String FILMS_PAGE_N = "https://www.afisha.ru/msk/schedule_cinema/%s/page%d/";
     private static final String TODAY = "na-segodnya";
     public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
 
     private final String currentDatePeriod;
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+    private final String filmsPageN;
 
     private static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "
@@ -44,7 +43,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    public AfishaParser() throws IOException {
+    public AfishaParser(final City city) throws IOException {
+        this.filmsPageN = "https://www.afisha.ru/" + city.asCode() + "/schedule_cinema/%s/page%d/";
         this.cookies = this.getCookies();
         this.currentDatePeriod = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
             + "--" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
@@ -71,14 +71,14 @@ public class AfishaParser {
      *
      * @return The map of film names to the link to the sessions
      */
-    public static Map<String, String> parseTodayFilms() throws IOException {
+    public Map<String, String> parseTodayFilms() throws IOException {
         final Map<String, String> films = new TreeMap<>();
         Map<String, String> pageFilms;
         Set<String> prevFilms = new HashSet<>();
         int page = 0;
         do {
             try {
-                pageFilms = parseFilmsPage(String.format(FILMS_PAGE_N, TODAY, page));
+                pageFilms = parseFilmsPage(String.format(this.filmsPageN, TODAY, page));
                 final Set<String> keySet = pageFilms.keySet();
                 if (prevFilms.equals(keySet)) {
                     break;
@@ -98,14 +98,14 @@ public class AfishaParser {
      *
      * @return The map of film names to the link to the sessions
      */
-    public static Map<String, String> parseFilmsInDates(final String dates) throws IOException {
+    public Map<String, String> parseFilmsInDates(final String dates) throws IOException {
         final Map<String, String> films = new TreeMap<>();
         Map<String, String> pageFilms;
         Set<String> prevFilms = new HashSet<>();
         int page = 0;
         do {
             try {
-                pageFilms = parseFilmsPage(String.format(FILMS_PAGE_N, dates, page));
+                pageFilms = parseFilmsPage(String.format(this.filmsPageN, dates, page));
                 final Set<String> keySet = pageFilms.keySet();
                 if (prevFilms.equals(keySet)) {
                     break;
@@ -234,7 +234,7 @@ public class AfishaParser {
                 final JSONObject session = sessions.getJSONObject(j);
                 final String price = session.get("MinPriceFormatted").toString();
                 result.add(new Session(
-                    LocalTime.parse(session.get("Time").toString(), TIME_FORMATTER),
+                    LocalDateTime.parse(session.get("DateTime").toString()),
                     info.get("Name").toString(),
                     distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
                     info.get("Verdict").toString(),
