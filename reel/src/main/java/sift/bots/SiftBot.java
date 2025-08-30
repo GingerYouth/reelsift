@@ -126,12 +126,12 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             showMainKeyboard(chatIdString, "Выберите действие:");
             return;
         }
-        if (text.equalsIgnoreCase("спб")) {
-            this.userCities.put(chatId, City.SAINT_PETERSBURG);
+        if ("спб".equalsIgnoreCase(text)) {
+            this.userCities.put(chatId, City.SPB);
             sendMessage(chatIdString, "Город изменен на Санкт-Петербург.");
             showMainKeyboard(chatIdString, "Выберите действие:");
             return;
-        } else if (text.equalsIgnoreCase("мск")) {
+        } else if ("мск".equalsIgnoreCase(text)) {
             this.userCities.put(chatId, City.MOSCOW);
             sendMessage(chatIdString, "Город изменен на Москва.");
             showMainKeyboard(chatIdString, "Выберите действие:");
