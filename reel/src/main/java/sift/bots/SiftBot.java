@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import main.java.sift.AfishaParser;
+import main.java.sift.City;
 import main.java.sift.PropertiesLoader;
 import main.java.sift.Session;
 import main.java.sift.cache.RedisCache;
@@ -56,6 +57,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         IDLE
     }
 
+    private final Map<Long, City> userCities = new ConcurrentHashMap<>();
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
     private final Map<Long, DateInterval> dateFilters = new ConcurrentHashMap<>();
     private final Map<Long, String> timeFilters = new ConcurrentHashMap<>();
@@ -113,6 +115,28 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final long chatId = update.getMessage().getChatId();
         final String chatIdString = String.valueOf(chatId);
         final String text = update.getMessage().getText();
+        if (!this.userCities.containsKey(chatId)) {
+            this.userCities.put(chatId, City.MOSCOW);
+            sendMessage(
+                chatIdString,
+                "👋 Привет! Добро пожаловать в SiftBot.\n"
+                    + "По умолчанию установлен город Москва.\n"
+                    + "Вы можете изменить город на Питер, написав в чат 'спб'.\n"
+            );
+            showMainKeyboard(chatIdString, "Выберите действие:");
+            return;
+        }
+        if (text.equalsIgnoreCase("спб")) {
+            this.userCities.put(chatId, City.SAINT_PETERSBURG);
+            sendMessage(chatIdString, "Город изменен на Санкт-Петербург.");
+            showMainKeyboard(chatIdString, "Выберите действие:");
+            return;
+        } else if (text.equalsIgnoreCase("мск")) {
+            this.userCities.put(chatId, City.MOSCOW);
+            sendMessage(chatIdString, "Город изменен на Москва.");
+            showMainKeyboard(chatIdString, "Выберите действие:");
+            return;
+        }
         if (TRIGGERS.contains(text)) {
             handleMainCommand(chatId, chatIdString, text);
         } else if (EDIT_COMMANDS.contains(text)) {
@@ -337,7 +361,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         sendMessage.setParseMode("HTML");
         try {
-            this.telegramClient.execute(sendMessage);
+            if (!sendMessage.getText().isEmpty()) {
+                this.telegramClient.execute(sendMessage);
+            }
         } catch (TelegramApiException tgApiEx) {
             tgApiEx.printStackTrace();
         }
@@ -465,22 +491,23 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             ? dateInterval
             : new DateInterval(LocalDate.now(), LocalDate.now());
         final List<LocalDate> requiredDates = requitedDateInterval.getDatesInRange();
-        final List<LocalDate> cachedDates = this.redisCache.getCachedDates();
+        final List<LocalDate> cachedDates = this.redisCache.getCachedDates(this.userCities.get(chatId));
         final List<LocalDate> missingDates = requiredDates.stream()
             .filter(d -> !cachedDates.contains(d))
             .toList();
 
-        final AfishaParser parser = new AfishaParser();
+        final AfishaParser parser = new AfishaParser(this.userCities.get(chatId));
         for (final LocalDate missing : missingDates) {
             // TODO:: Optimize by creating interval
-            final Map<String, String> missingMap = AfishaParser.parseFilmsInDates(missing.format(DATE_FORMATTER));
+            final Map<String, String> missingMap = parser.parseFilmsInDates(missing.format(DATE_FORMATTER));
             for (final Map.Entry<String, String> entry : missingMap.entrySet()) {
                 final List<Session> missingSessions = parser.parseSchedule(entry.getValue());
-                this.redisCache.cacheSessions(missingSessions);
+                this.redisCache.cacheSessions(missingSessions, this.userCities.get(chatId));
             }
         }
 
-        final List<Session> resultSessions = this.redisCache.getCachedSessions(requiredDates);
+        final List<Session> resultSessions = this.redisCache
+            .getCachedSessions(requiredDates, this.userCities.get(chatId));
         final List<Session> filtered = filters.filter(resultSessions);
 
         sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
