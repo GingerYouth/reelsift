@@ -8,8 +8,9 @@ Write to @ReelSiftBot in telegram. [Current status: OFF]
 
 ## Features
 - **Telegram Bot Integration:** Interact with a Telegram bot to search for movies and set filters.
-- **Schedule Parsing:** Automatically fetches and parses today's film schedule from Afisha.ru.
+- **Schedule Parsing:** Automatically fetches and parses film schedules from Afisha.ru.
 - **Flexible Filtering:**
+    - **Date Filter:** Set desired date interval ranges for movie sessions (today by default).
     - **Time Filter:** Set desired time ranges for movie sessions.
     - **Excluded Genres:** Specify genres you don't want to see.
     - **Mandatory Genres:** Choose genres you want to see.
@@ -18,6 +19,6 @@ Write to @ReelSiftBot in telegram. [Current status: OFF]
 ### Technologies
 - Java 24
 - Mill build tool
-- JSoup (web scraping)
-
-- TelegramBots library
+- JSoup
+- TelegramBots
+- Redis

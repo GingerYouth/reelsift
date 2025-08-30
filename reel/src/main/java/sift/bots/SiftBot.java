@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import main.java.sift.AfishaParser;
 import main.java.sift.PropertiesLoader;
 import main.java.sift.Session;
+import main.java.sift.cache.RedisCache;
+import main.java.sift.filters.DateInterval;
 import main.java.sift.filters.Filters;
 import main.java.sift.filters.Genre;
 import main.java.sift.filters.LlmFilter;
@@ -34,9 +36,13 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
     "PMD.AvoidThrowingRawExceptionTypes",
     "PMD.ConsecutiveLiteralAppends",
     "PMD.TooManyMethods", "PMD.GodClass",
-    "PMD.CouplingBetweenObjects"
+    "PMD.CouplingBetweenObjects",
+    "PMD.ExcessiveImports"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
+
+    private final RedisCache redisCache = new RedisCache("localhost", 6379); // Use your Redis host/port
+
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
 
     private enum UserState {
@@ -51,7 +57,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
-    private final Map<Long, String> dateFilters = new ConcurrentHashMap<>();
+    private final Map<Long, DateInterval> dateFilters = new ConcurrentHashMap<>();
     private final Map<Long, String> timeFilters = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> excludedGenres = new ConcurrentHashMap<>();
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
@@ -169,10 +175,10 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         switch (state) {
             case AWAITING_DATE:
                 try {
-                    final String validated = validateDateInput(input);
-                    this.dateFilters.put(chatId, validated);
+                    final DateInterval dateInterval = validateDateInput(input);
+                    this.dateFilters.put(chatId, dateInterval);
                     this.userStates.put(chatId, UserState.IDLE);
-                    showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + validated);
+                    showMainKeyboard(chatIdStr, "✅ Диапазон дат сохранен: " + dateInterval);
                 } catch (final IllegalArgumentException e) {
                     showMainKeyboard(chatIdStr, "❌ Неверный формат даты. " + DATE_GUIDE);
                 }
@@ -221,24 +227,21 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-    private String validateDateInput(final String input) {
+    private static DateInterval validateDateInput(final String input) {
         final String[] parts = input.split("-");
         if (parts.length == 1) {
-            final LocalDate start = parseSingleDate(parts[0].trim());
-            return String.format("%s-%s", start, start);
+            final LocalDate date = parseSingleDate(parts[0].trim());
+            return new DateInterval(date, date);
         }
         if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid date format!");
         }
         final LocalDate start = parseSingleDate(parts[0].trim());
         final LocalDate end = parseSingleDate(parts[1].trim());
-        if (end.isBefore(start)) {
-            throw new IllegalArgumentException("End date before start date!");
-        }
-        return input;
+        return new DateInterval(start, end);
     }
 
-    private LocalDate parseSingleDate(final String dateStr) {
+    private static LocalDate parseSingleDate(final String dateStr) {
         final LocalDate date = MonthDay.parse(dateStr, DATE_FORMATTER).atYear(Year.now().getValue());
         if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Invalid date format");
@@ -383,7 +386,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final StringBuilder builder = new StringBuilder(140);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
             .append("\n📅 <b>Дата:</b> ")
-            .append(this.dateFilters.containsKey(chatId) ? dateFilters.get(chatId) : "сегодня")
+            .append(this.dateFilters.containsKey(chatId) ? this.dateFilters.get(chatId) : "сегодня")
             .append("\n⏰ <b>Время:</b> ").append(this.timeFilters.getOrDefault(chatId, "не задано"))
             .append("\n🚫 <b>Исключения:</b> ")
             .append(Genre.toStringOrDefault(this.excludedGenres.get(chatId), NOT_SET_UP))
@@ -456,16 +459,30 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             final LlmFilter llmFilter = new LlmFilter(this.aiPrompts.get(chatId));
             filters.addFilter(llmFilter);
         }
+
+        final DateInterval dateInterval = this.dateFilters.get(chatId);
+        final DateInterval requitedDateInterval = dateInterval != null
+            ? dateInterval
+            : new DateInterval(LocalDate.now(), LocalDate.now());
+        final List<LocalDate> requiredDates = requitedDateInterval.getDatesInRange();
+        final List<LocalDate> cachedDates = this.redisCache.getCachedDates();
+        final List<LocalDate> missingDates = requiredDates.stream()
+            .filter(d -> !cachedDates.contains(d))
+            .toList();
+
         final AfishaParser parser = new AfishaParser();
-        final String date = this.dateFilters.get(chatId);
-        final Map<String, String> films = date != null
-            ? AfishaParser.parseFilmsInDates(date)
-            : AfishaParser.parseTodayFilms();
-        final List<Session> sessions = new ArrayList<>();
-        for (final Map.Entry<String, String> entry : films.entrySet()) {
-            sessions.addAll(parser.parseSchedule(entry.getValue()));
+        for (final LocalDate missing : missingDates) {
+            // TODO:: Optimize by creating interval
+            final Map<String, String> missingMap = AfishaParser.parseFilmsInDates(missing.format(DATE_FORMATTER));
+            for (final Map.Entry<String, String> entry : missingMap.entrySet()) {
+                final List<Session> missingSessions = parser.parseSchedule(entry.getValue());
+                this.redisCache.cacheSessions(missingSessions);
+            }
         }
-        final List<Session> filtered = filters.filter(sessions);
+
+        final List<Session> resultSessions = this.redisCache.getCachedSessions(requiredDates);
+        final List<Session> filtered = filters.filter(resultSessions);
+
         sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
 
         for (final String split : Session.toSplitStrings(filtered)) {

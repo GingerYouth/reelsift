@@ -1,17 +1,73 @@
 package main.java.sift;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /** Session DTO. */
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 public record Session(
-    LocalTime dateTime, String name, String description, String verdict,
-    List<String> genres, String cinema, String address, int price, String link) {
+    LocalDateTime dateTime, String name, String description, String verdict,
+    List<String> genres, String cinema, String address, int price, String link
+) {
+
+    public static String toJson(final List<Session> sessions) {
+        final JSONArray jsonArray = new JSONArray();
+        jsonArray.putAll(sessions.stream().map(Session::toJson).collect(Collectors.toList()));
+        return jsonArray.toString();
+    }
+
+    private String toJson() {
+        final JSONObject obj = new JSONObject();
+        obj.put("dateTime", this.dateTime().toString());
+        obj.put("name", this.name());
+        obj.put("description", this.description());
+        obj.put("verdict", this.verdict());
+        obj.put("genres", this.genres());
+        obj.put("cinema", this.cinema());
+        obj.put("address", this.address());
+        obj.put("price", this.price());
+        obj.put("link", this.link());
+        return obj.toString();
+    }
+
+    public static List<Session> fromJsonArray(final String json) {
+        if (json == null || json.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (json.charAt(0) == '[') {
+            final JSONArray arr = new JSONArray(json);
+            return IntStream.range(0, arr.length())
+                .mapToObj(i -> fromJson(arr.get(i).toString()))
+                .collect(Collectors.toList());
+        } else if (json.charAt(0) == '{') {
+            return Collections.singletonList(fromJson(json));
+        } else {
+            // TODO:: Log it
+            return Collections.emptyList();
+        }
+    }
+
+    private static Session fromJson(final String json) {
+        final JSONObject obj = new JSONObject(json);
+        final LocalDateTime dateTime = LocalDateTime.parse(obj.getString("dateTime"));
+        final String name = obj.getString("name");
+        final String description = obj.getString("description");
+        final String verdict = obj.getString("verdict");
+        final List<String> genres = obj.getJSONArray("genres").toList().stream().map(Object::toString).toList();
+        final String cinema = obj.getString("cinema");
+        final String address = obj.getString("address");
+        final int price = obj.getInt("price");
+        final String link = obj.getString("link");
+        return new Session(dateTime, name, description, verdict, genres, cinema, address, price, link);
+    }
 
     /**
      * Group of sessions of specific movie.

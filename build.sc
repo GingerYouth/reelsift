@@ -29,6 +29,7 @@ object reel extends JavaModule with CheckstyleModule {
     ivy"org.jsoup:jsoup:1.20.1",
     ivy"org.json:json:20250517",
     ivy"org.telegram:telegrambots-longpolling:8.3.0",
-    ivy"org.telegram:telegrambots-client:8.3.0"
+    ivy"org.telegram:telegrambots-client:8.3.0",
+    ivy"redis.clients:jedis:6.0.0"
   )
 }
