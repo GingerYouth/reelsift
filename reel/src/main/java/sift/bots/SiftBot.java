@@ -42,7 +42,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 @SuppressWarnings({
     "PMD.AvoidThrowingRawExceptionTypes",
     "PMD.ConsecutiveLiteralAppends",
-    "PMD.TooManyMethods", "PMD.GodClass",
+    "PMD.TooManyMethods",
     "PMD.CouplingBetweenObjects",
     "PMD.ExcessiveImports"
 })
@@ -337,7 +337,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             case Delete.MANDATORY -> this.mandatoryGenres.remove(chatId);
             case Delete.DATE -> this.dateFilters.remove(chatId);
             case Delete.TIME -> this.timeFilters.remove(chatId);
-            case Delete.AI -> this.aiPrompts.remove(chatId);
+            case Delete.AI_PROMPT -> this.aiPrompts.remove(chatId);
             case Delete.SUBS -> this.subFilters.remove(chatId);
             case Delete.ALL -> {
                 this.excludedGenres.remove(chatId);
@@ -491,7 +491,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
         // Row 3: AI and subs
         final KeyboardRow row3 = new KeyboardRow();
-        row3.add(Delete.AI.getName());
+        row3.add(Delete.AI_PROMPT.getName());
         row3.add(Delete.SUBS.getName());
 
         // Row 4: back
