@@ -18,7 +18,7 @@ public enum Common {
     }
 
     public static Optional<String> getEnumByString(final String string) {
-        for (final Common common : Common.values()) {
+        for (final Common common : values()) {
             if (common.name.equals(string)) {
                 return Optional.of(common.name());
             }

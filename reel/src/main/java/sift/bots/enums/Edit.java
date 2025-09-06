@@ -8,7 +8,7 @@ public enum Edit {
     MANDATORY("Изменить предпочтения"),
     DATE("Изменить дату"),
     TIME("Изменить время"),
-    AI("Изменить AI-запрос"),
+    AI_PROMPT("Изменить AI-запрос"),
     BACK("🔙 Назад");
 
     private final String name;
@@ -22,7 +22,7 @@ public enum Edit {
     }
 
     public static Optional<Edit> getEnumByString(final String string) {
-        for (final Edit edit : Edit.values()) {
+        for (final Edit edit : values()) {
             if (edit.name.equals(string)) {
                 return Optional.of(edit);
             }

@@ -51,6 +51,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     private final RedisCache redisCache = new RedisCache("localhost", 6379); // Use your Redis host/port
     private final TelegramClient telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
+    public static final String HTML = "HTML";
 
     private final Map<Long, City> userCities = new ConcurrentHashMap<>();
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
@@ -128,9 +129,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 this.showMainKeyboard(chatIdStr, Guide.TIME.getName());
                 break;
 
-            case Trigger.AI:
+            case Trigger.AI_PROMPT:
                 this.userStates.put(chatId, UserState.AWAITING_AI);
-                this.showMainKeyboard(chatIdStr, Guide.AI.getName());
+                this.showMainKeyboard(chatIdStr, Guide.AI_PROMPT.getName());
                 break;
 
             case Trigger.SUBS_EN:
@@ -311,12 +312,12 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 );
                 break;
 
-            case Edit.AI:
+            case Edit.AI_PROMPT:
                 userStates.put(chatId, UserState.AWAITING_AI);
                 final String currentPrompt = aiPrompts.getOrDefault(chatId, Common.NOT_SET_UP.getName());
                 showMainKeyboard(
                     chatIdStr,
-                    String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, Guide.AI)
+                    String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, Guide.AI_PROMPT)
                 );
                 break;
 
@@ -355,7 +356,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void sendMessage(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
-        sendMessage.setParseMode("HTML");
+        sendMessage.setParseMode(HTML);
         try {
             if (!sendMessage.getText().isEmpty()) {
                 this.telegramClient.execute(sendMessage);
@@ -366,7 +367,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private void sendMessage(final SendMessage message) {
-        message.setParseMode("HTML");
+        message.setParseMode(HTML);
         try {
             this.telegramClient.execute(message);
         } catch (TelegramApiException tgApiEx) {
@@ -387,7 +388,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         row2.add(Trigger.MANDATORY.getName());
 
         final KeyboardRow row3 = new KeyboardRow();
-        row3.add(Trigger.AI.getName());
+        row3.add(Trigger.AI_PROMPT.getName());
         row3.add(Trigger.EDIT.getName());
 
         final KeyboardRow row4 = new KeyboardRow();
@@ -414,7 +415,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void showEditMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
-        final StringBuilder builder = new StringBuilder(140);
+        final StringBuilder builder = new StringBuilder(200);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
             .append("\n📅 <b>Дата:</b> ")
             .append(this.dateFilters.containsKey(chatId) ? this.dateFilters.get(chatId) : "сегодня")
@@ -427,7 +428,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             .append("\n <b>Только фильмы с субтитрами: </b> ").append(this.subFilters.contains(chatId) ? "да" : "нет");
 
         final SendMessage message = new SendMessage(chatIdStr, builder.toString());
-        message.setParseMode("HTML");
+        message.setParseMode(HTML);
 
         final List<KeyboardRow> keyboard = new ArrayList<>();
 
@@ -443,7 +444,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
         // Row 3: AI and back
         final KeyboardRow row3 = new KeyboardRow();
-        row3.add(Edit.AI.getName());
+        row3.add(Edit.AI_PROMPT.getName());
         row3.add(Edit.BACK.getName());
 
         keyboard.add(row1);
@@ -460,7 +461,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void showDeleteMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
-        final StringBuilder builder = new StringBuilder(140);
+        final StringBuilder builder = new StringBuilder(200);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
                 .append("\n📅 <b>Дата:</b> ")
                 .append(this.dateFilters.containsKey(chatId) ? this.dateFilters.get(chatId) : "сегодня")
@@ -474,7 +475,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 .append(this.subFilters.contains(chatId) ? "да" : "нет");
 
         final SendMessage message = new SendMessage(chatIdStr, builder.toString());
-        message.setParseMode("HTML");
+        message.setParseMode(HTML);
 
         final List<KeyboardRow> keyboard = new ArrayList<>();
 

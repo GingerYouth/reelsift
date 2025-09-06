@@ -8,7 +8,7 @@ public enum Trigger {
     TIME("⏰ Задать время начала сеанса"),
     EXCLUDED("🚫 Задать нежелательные жанры"),
     MANDATORY("✅ Задать предпочтительные жанры"),
-    AI("🤖 Задать AI-запрос"),
+    AI_PROMPT("🤖 Задать AI-запрос"),
     SUBS_EN("\uD83D\uDCAC Только фильмы с субтитрами"),
     SUBS_DIS("\uD83D\uDCAC Отключить фильтр по фильмам с субтитрами"),
     EDIT("⚙️ Изменить текущий фильтр"),
@@ -26,7 +26,7 @@ public enum Trigger {
     }
 
     public static Optional<Trigger> getEnumByString(final String string) {
-        for (final Trigger trigger : Trigger.values()) {
+        for (final Trigger trigger : values()) {
             if (trigger.name.equals(string)) {
                 return Optional.of(trigger);
             }

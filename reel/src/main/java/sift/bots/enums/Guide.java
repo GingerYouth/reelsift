@@ -9,7 +9,7 @@ public enum Guide {
     ),
     EXCLUDED("Укажите нежелательные жанры, например: Комедия, мелодрама"),
     MANDATORY("Укажите жанры для поиска, например: Триллер, драма\n"),
-    AI("Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n"
+    AI_PROMPT("Добавить фильтрацию с помощью запроса к искусственному интеллекту.\n"
         + "Для этого продолжите запрос: Я хочу сходить в кинотеатр и посмотреть..."
     ),
     SEARCH("Пожалуйста, ожидайте...\n"),
@@ -28,7 +28,7 @@ public enum Guide {
     }
 
     public static Optional<String> getEnumByString(final String string) {
-        for (final Guide guide : Guide.values()) {
+        for (final Guide guide : values()) {
             if (guide.name.equals(string)) {
                 return Optional.of(guide.name());
             }

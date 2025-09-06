@@ -24,7 +24,7 @@ public enum Delete {
     }
 
     public static Optional<Delete> getEnumByString(final String string) {
-        for (final Delete delete : Delete.values()) {
+        for (final Delete delete : values()) {
             if (delete.name.equals(string)) {
                 return Optional.of(delete);
             }
