@@ -210,41 +210,63 @@ public class AfishaParser {
         final JSONObject root = new JSONObject(json);
         final JSONObject info = root.getJSONObject("MovieCard").getJSONObject("Info");
 
+        final List<String> genres = extractGenres(info);
+        final JSONObject distributorInfo = extractDistributorInfo(info);
+
+        final JSONArray items = root
+            .getJSONObject("ScheduleWidget")
+            .getJSONObject("ScheduleList")
+            .getJSONArray("Items");
+
+        for (int i = 0; i < items.length(); i++) {
+            final JSONObject item = items.getJSONObject(i);
+            final JSONObject place = item.getJSONObject("Place");
+            final JSONArray sessions = item.getJSONArray("Sessions");
+            result.addAll(createSessionsForItem(sessions, info, distributorInfo, genres, place));
+        }
+        return result;
+    }
+
+    private static List<String> extractGenres(final JSONObject info) {
         final JSONArray genresArray = info.getJSONObject("Genres").getJSONArray("Links");
         final List<String> genres = new ArrayList<>();
         for (int i = 0; i < genresArray.length(); i++) {
             genres.add(((JSONObject) genresArray.get(i)).get("Name").toString());
         }
+        return genres;
+    }
 
-        JSONObject distributorInfo = null;
+    private static JSONObject extractDistributorInfo(final JSONObject info) {
         try {
-            distributorInfo = info.getJSONObject("DistributorInfo");
+            return info.getJSONObject("DistributorInfo");
         } catch (final JSONException ignored) {
-            // Sometimes it's empty
+            return null;
         }
-        final JSONArray items = root
-            .getJSONObject("ScheduleWidget")
-            .getJSONObject("ScheduleList")
-            .getJSONArray("Items");
-        for (int i = 0; i < items.length(); i++) {
-            final JSONObject item = items.getJSONObject(i);
-            final JSONObject place = item.getJSONObject("Place");
-            final JSONArray sessions = item.getJSONArray("Sessions");
-            for (int j = 0; j < sessions.length(); j++) {
-                final JSONObject session = sessions.getJSONObject(j);
-                final String price = session.get("MinPriceFormatted").toString();
-                result.add(new Session(
-                    LocalDateTime.parse(session.get("DateTime").toString()),
-                    info.get("Name").toString(),
-                    distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
-                    info.get("Verdict").toString(),
-                    genres,
-                    place.getString("Name"),
-                    place.get("Address").toString(),
-                    "null".equals(price) ? -1 : Integer.parseInt(price),
-                    "link"
-                ));
-            }
+    }
+
+    private static List<Session> createSessionsForItem(
+        final JSONArray sessions,
+        final JSONObject info,
+        final JSONObject distributorInfo,
+        final List<String> genres,
+        final JSONObject place
+    ) {
+        final List<Session> result = new ArrayList<>();
+        for (int j = 0; j < sessions.length(); j++) {
+            final JSONObject session = sessions.getJSONObject(j);
+            final String price = session.get("MinPriceFormatted").toString();
+            result.add(new Session(
+                LocalDateTime.parse(session.get("DateTime").toString()),
+                info.get("Name").toString(),
+                distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
+                info.get("Verdict").toString(),
+                genres,
+                place.getString("Name"),
+                place.get("Address").toString(),
+                "null".equals(price) ? -1 : Integer.parseInt(price),
+                "link",
+                "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString())
+            ));
         }
         return result;
     }
