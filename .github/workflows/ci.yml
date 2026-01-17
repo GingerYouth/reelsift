@@ -22,17 +22,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Make mill executable
-        run: chmod +x mill
-
-      - name: Run Checkstyle via Mill
-        run: ./mill reel.checkstyle
+      - name: Run Checkstyle via Maven
+        run: mvn checkstyle:check
 
       - name: PMD
         uses: pmd/pmd-github-action@v2.0.0
         id: pmd
         with:
-          sourcePath: 'reel/src/main/java/sift'
+          sourcePath: 'src/main/java'
           rulesets: 'pmd-ruleset.xml'
       - name: Fail build if there are violations
         if: steps.pmd.outputs.violations != 0
