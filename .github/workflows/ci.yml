@@ -41,7 +41,7 @@ jobs:
             ${{ runner.os }}-m2-
 
       - name: Run tests
-        run: mvn -B -V test
+        run: mvn -B -V -Dcheckstyle.skip=true -Dpmd.skip=true test
 
       - name: Fail build if there are violations
         if: steps.pmd.outputs.violations != 0
