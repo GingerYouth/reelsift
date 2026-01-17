@@ -26,11 +26,7 @@ jobs:
         run: mvn checkstyle:check
 
       - name: PMD
-        uses: pmd/pmd-github-action@v2.0.0
-        id: pmd
-        with:
-          sourcePath: 'src/main/java'
-          rulesets: 'pmd-ruleset.xml'
+        run: mvn pmd:check
 
       - name: Cache Maven packages
         uses: actions/cache@v4
