@@ -1,4 +1,4 @@
-name: Checkstyle & PMD
+name: Checkstyle, PMD, tests
 
 on:
   push:
