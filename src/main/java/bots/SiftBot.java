@@ -46,7 +46,8 @@ import java.util.stream.Collectors;
     "PMD.TooManyMethods",
     "PMD.CouplingBetweenObjects",
     "PMD.ExcessiveImports",
-    "PMD.AvoidPrintStackTrace"
+    "PMD.AvoidPrintStackTrace",
+    "PMD.LooseCoupling"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
