@@ -45,7 +45,10 @@ import java.util.stream.Collectors;
     "PMD.ConsecutiveLiteralAppends",
     "PMD.TooManyMethods",
     "PMD.CouplingBetweenObjects",
-    "PMD.ExcessiveImports"
+    "PMD.ExcessiveImports",
+    "PMD.ExhaustiveSwitchHasDefault",
+    "PMD.AvoidPrintStackTrace",
+    "PMD.LooseCoupling"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
