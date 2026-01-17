@@ -1,8 +1,9 @@
-package main.java.sift.filters;
+package filters;
+
+import parser.Session;
 
 import java.util.List;
 import java.util.stream.Stream;
-import main.java.sift.Session;
 
 /** Mandatory genres. */
 public class MandatoryGenres implements Filter {

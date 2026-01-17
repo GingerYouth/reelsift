@@ -1,4 +1,4 @@
-package main.java.sift.filters;
+package filters;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

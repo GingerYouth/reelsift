@@ -1,4 +1,7 @@
-package main.java.sift.filters;
+package filters;
+
+import parser.Movie;
+import parser.Session;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import main.java.sift.Movie;
-import main.java.sift.Session;
 
 /** LLM filter. */
 public class LlmFilter implements Filter {

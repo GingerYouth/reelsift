@@ -1,4 +1,4 @@
-package main.java.sift;
+package parser;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

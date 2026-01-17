@@ -1,7 +1,8 @@
-package main.java.sift.filters;
+package filters;
+
+import parser.Session;
 
 import java.util.stream.Stream;
-import main.java.sift.Session;
 
 /** Filter interface. */
 @FunctionalInterface

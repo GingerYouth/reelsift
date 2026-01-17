@@ -1,4 +1,4 @@
-package main.java.sift.bots.enums;
+package bots.enums;
 
 /** User state enum. */
 public enum UserState {

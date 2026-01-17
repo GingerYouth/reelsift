@@ -1,4 +1,4 @@
-package main.java.sift;
+package parser;
 
 /** City enum. */
 public enum City {

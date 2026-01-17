@@ -1,16 +1,16 @@
-package main.java.sift;
+package parser;
 
+import filters.ExcludedGenres;
+import filters.Filters;
+import filters.MandatoryGenres;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import main.java.sift.filters.ExcludedGenres;
-import main.java.sift.filters.Filters;
-import main.java.sift.filters.MandatoryGenres;
 
-/** Main class. */
+/** parser.Main class. */
 @SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
-    public static void main(String[]args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         final AfishaParser parser = new AfishaParser(City.MOSCOW);
         final Map<String, String> films = parser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();

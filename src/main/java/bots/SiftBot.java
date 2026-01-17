@@ -1,4 +1,30 @@
-package main.java.sift.bots;
+package bots;
+
+import bots.enums.Common;
+import bots.enums.Delete;
+import bots.enums.Edit;
+import bots.enums.Guide;
+import bots.enums.Trigger;
+import bots.enums.UserState;
+import cache.RedisCache;
+import filters.DateInterval;
+import filters.Filters;
+import filters.Genre;
+import filters.LlmFilter;
+import filters.MandatoryGenres;
+import filters.TimeFilter;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
+import parser.AfishaParser;
+import parser.City;
+import parser.Session;
+import utils.PropertiesLoader;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -12,31 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import main.java.sift.AfishaParser;
-import main.java.sift.City;
-import main.java.sift.PropertiesLoader;
-import main.java.sift.Session;
-import main.java.sift.bots.enums.Common;
-import main.java.sift.bots.enums.Delete;
-import main.java.sift.bots.enums.Edit;
-import main.java.sift.bots.enums.Guide;
-import main.java.sift.bots.enums.Trigger;
-import main.java.sift.bots.enums.UserState;
-import main.java.sift.cache.RedisCache;
-import main.java.sift.filters.DateInterval;
-import main.java.sift.filters.Filters;
-import main.java.sift.filters.Genre;
-import main.java.sift.filters.LlmFilter;
-import main.java.sift.filters.MandatoryGenres;
-import main.java.sift.filters.TimeFilter;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 /** Telegram bot logic. */
 @SuppressWarnings({
@@ -44,7 +45,8 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
     "PMD.ConsecutiveLiteralAppends",
     "PMD.TooManyMethods",
     "PMD.CouplingBetweenObjects",
-    "PMD.ExcessiveImports"
+    "PMD.ExcessiveImports",
+    "PMD.AvoidPrintStackTrace"
 })
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
@@ -70,7 +72,6 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         }
         final long chatId = update.getMessage().getChatId();
         final String chatIdString = String.valueOf(chatId);
-        final String text = update.getMessage().getText();
         if (!this.userCities.containsKey(chatId)) {
             this.userCities.put(chatId, City.MOSCOW);
             sendMessage(
@@ -82,6 +83,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             showMainKeyboard(chatIdString, "Выберите действие:");
             return;
         }
+        final String text = update.getMessage().getText();
         if ("спб".equalsIgnoreCase(text)) {
             this.userCities.put(chatId, City.SPB);
             sendMessage(chatIdString, "Город изменен на Санкт-Петербург.");
@@ -109,51 +111,51 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     @SuppressWarnings("PMD.CyclomaticComplexity")
     private void handleMainCommand(final long chatId, final String chatIdStr, final Trigger command) {
         switch (command) {
-            case Trigger.DATE:
+            case DATE:
                 this.userStates.put(chatId, UserState.AWAITING_DATE);
                 this.showMainKeyboard(chatIdStr, Guide.DATE.getName());
                 break;
 
-            case Trigger.EXCLUDED:
+            case EXCLUDED:
                 this.userStates.put(chatId, UserState.AWAITING_EXCLUDED);
                 this.showMainKeyboard(chatIdStr, Guide.EXCLUDED.getName());
                 break;
 
-            case Trigger.MANDATORY:
+            case MANDATORY:
                 this.userStates.put(chatId, UserState.AWAITING_MANDATORY);
                 this.showMainKeyboard(chatIdStr, Guide.MANDATORY.getName());
                 break;
 
-            case Trigger.TIME:
+            case TIME:
                 this.userStates.put(chatId, UserState.AWAITING_TIME);
                 this.showMainKeyboard(chatIdStr, Guide.TIME.getName());
                 break;
 
-            case Trigger.AI_PROMPT:
+            case AI_PROMPT:
                 this.userStates.put(chatId, UserState.AWAITING_AI);
                 this.showMainKeyboard(chatIdStr, Guide.AI_PROMPT.getName());
                 break;
 
-            case Trigger.SUBS_EN:
+            case SUBS_EN:
                 this.subFilters.add(chatId);
                 this.userStates.put(chatId, UserState.IDLE);
                 break;
 
-            case Trigger.SUBS_DIS:
+            case SUBS_DIS:
                 this.subFilters.remove(chatId);
                 break;
 
-            case Trigger.EDIT:
+            case EDIT:
                 this.userStates.put(chatId, UserState.EDITING_FILTERS);
                 this.showEditMenu(chatIdStr);
                 break;
 
-            case Trigger.DELETE:
+            case DELETE:
                 this.userStates.put(chatId, UserState.DELETING_FILTERS);
                 this.showDeleteMenu(chatIdStr);
                 break;
 
-            case Trigger.SEARCH:
+            case SEARCH:
                 this.userStates.put(chatId, UserState.SEARCHING);
                 try {
                     this.startSearch(chatIdStr, chatId);
@@ -222,6 +224,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
             default:
                 showMainKeyboard(chatIdStr, "Выберите действие из меню:");
+                break;
         }
     }
 
@@ -260,7 +263,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final int mid = (allGenres.size() + 1) / 2;
         for (int i = 0; i < mid; i++) {
             final String left = allGenres.get(i);
-            final String right = (i + mid < allGenres.size()) ? allGenres.get(i + mid) : "";
+            final String right = i + mid < allGenres.size() ? allGenres.get(i + mid) : "";
             builder.append(String.format("%-20s %s%n", left, right));
         }
 
@@ -269,7 +272,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void handleEditCommand(final long chatId, final String chatIdStr, final Edit command) {
         switch (command) {
-            case Edit.EXCLUDED:
+            case EXCLUDED:
                 this.userStates.put(chatId, UserState.AWAITING_EXCLUDED);
                 final String excludedAsStr = this.excludedGenres
                     .getOrDefault(chatId, Collections.emptySet())
@@ -286,7 +289,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 );
                 break;
 
-            case Edit.MANDATORY:
+            case MANDATORY:
                 this.userStates.put(chatId, UserState.AWAITING_MANDATORY);
                 final String mandatoryAsStr = this.mandatoryGenres
                     .getOrDefault(chatId, Collections.emptySet())
@@ -303,7 +306,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 );
                 break;
 
-            case Edit.TIME:
+            case TIME:
                 this.userStates.put(chatId, UserState.AWAITING_TIME);
                 final String currentTime = timeFilters.getOrDefault(chatId, Common.NOT_SET_UP.getName());
                 showMainKeyboard(
@@ -312,7 +315,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 );
                 break;
 
-            case Edit.AI_PROMPT:
+            case AI_PROMPT:
                 userStates.put(chatId, UserState.AWAITING_AI);
                 final String currentPrompt = aiPrompts.getOrDefault(chatId, Common.NOT_SET_UP.getName());
                 showMainKeyboard(
@@ -321,7 +324,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 );
                 break;
 
-            case Edit.BACK:
+            case BACK:
                 userStates.put(chatId, UserState.IDLE);
                 showMainKeyboard(chatIdStr, "Возврат в главное меню");
                 break;
@@ -333,20 +336,20 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
     private void handleDeleteCommand(final long chatId, final String chatIdStr, final Delete command) {
         switch (command) {
-            case Delete.EXCLUDED -> this.excludedGenres.remove(chatId);
-            case Delete.MANDATORY -> this.mandatoryGenres.remove(chatId);
-            case Delete.DATE -> this.dateFilters.remove(chatId);
-            case Delete.TIME -> this.timeFilters.remove(chatId);
-            case Delete.AI_PROMPT -> this.aiPrompts.remove(chatId);
-            case Delete.SUBS -> this.subFilters.remove(chatId);
-            case Delete.ALL -> {
+            case EXCLUDED -> this.excludedGenres.remove(chatId);
+            case MANDATORY -> this.mandatoryGenres.remove(chatId);
+            case DATE -> this.dateFilters.remove(chatId);
+            case TIME -> this.timeFilters.remove(chatId);
+            case AI_PROMPT -> this.aiPrompts.remove(chatId);
+            case SUBS -> this.subFilters.remove(chatId);
+            case ALL -> {
                 this.excludedGenres.remove(chatId);
                 this.mandatoryGenres.remove(chatId);
                 this.dateFilters.remove(chatId);
                 this.aiPrompts.remove(chatId);
                 this.subFilters.remove(chatId);
             }
-            case Delete.BACK -> {
+            case BACK -> {
                 userStates.put(chatId, UserState.IDLE);
                 showMainKeyboard(chatIdStr, "Возврат в главное меню");
             }

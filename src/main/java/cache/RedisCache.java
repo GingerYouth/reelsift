@@ -1,4 +1,8 @@
-package main.java.sift.cache;
+package cache;
+
+import parser.City;
+import parser.Session;
+import redis.clients.jedis.Jedis;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,9 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import main.java.sift.City;
-import main.java.sift.Session;
-import redis.clients.jedis.Jedis;
 
 /**
  * Provides caching functionality for `Session` objects using Redis.

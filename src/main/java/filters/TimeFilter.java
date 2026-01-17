@@ -1,10 +1,10 @@
-package main.java.sift.filters;
+package filters;
 
 import java.time.LocalTime;
 import java.time.chrono.ChronoLocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
-import main.java.sift.Session;
+import parser.Session;
 
 /** Time filter. */
 @SuppressWarnings("PMD.ShortVariable")
