@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 24
+      - name: Set up JDK 24 for build
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -24,6 +24,12 @@ jobs:
 
       - name: Run Checkstyle via Maven
         run: mvn checkstyle:check
+
+      - name: PMD - set up JDK 17 for PMD action
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: PMD
         uses: pmd/pmd-github-action@v2.0.0
