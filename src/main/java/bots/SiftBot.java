@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
     "PMD.TooManyMethods",
     "PMD.CouplingBetweenObjects",
     "PMD.ExcessiveImports",
-    "PMD.ExhaustiveSwitchHasDefault",
     "PMD.AvoidPrintStackTrace",
     "PMD.LooseCoupling"
 })
