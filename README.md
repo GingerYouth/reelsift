@@ -18,7 +18,7 @@ Write to @ReelSiftBot in telegram. [Current status: OFF]
 
 ### Technologies
 - Java 24
-- Mill build tool
+- Maven
 - JSoup
 - TelegramBots
 - Redis (Jedis)
