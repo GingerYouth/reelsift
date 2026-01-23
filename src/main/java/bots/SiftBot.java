@@ -354,7 +354,6 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                 userStates.put(chatId, UserState.IDLE);
                 showMainKeyboard(chatIdStr, "Возврат в главное меню");
             }
-            default -> {}
         }
     }
 

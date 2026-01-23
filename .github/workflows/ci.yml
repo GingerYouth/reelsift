@@ -12,6 +12,17 @@ jobs:
   codecheck:
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,6 +48,9 @@ jobs:
             ${{ runner.os }}-m2-
 
       - name: Run tests
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         run: mvn -B -V -Dcheckstyle.skip=true -Dpmd.skip=true test
 
       - name: Fail build if there are violations
