@@ -32,11 +32,11 @@ import java.util.stream.Collectors;
  * <h2>Thread Safety</h2>
  * Uses {@link JedisPool} for safe concurrent access from multiple bot users.
  */
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class RedisCache {
     private static final Logger LOGGER = Logger.getLogger(RedisCache.class.getName());
     private static final int DEFAULT_POOL_SIZE = 10;
     private static final long MINIMUM_TTL_SECONDS = 300; // 5 minutes safety margin
-    private static final String KEY_SEPARATOR = ":";
 
     private final JedisPool jedisPool;
 
@@ -80,12 +80,12 @@ public class RedisCache {
             return;
         }
 
-        try (final Jedis jedis = this.jedisPool.getResource()) {
+        try (Jedis jedis = this.jedisPool.getResource()) {
             final Map<LocalDate, List<Session>> sessionsByDate = sessions.stream()
                 .collect(Collectors.groupingBy(s -> s.dateTime().toLocalDate()));
 
             for (final Map.Entry<LocalDate, List<Session>> entry : sessionsByDate.entrySet()) {
-                final String key = buildKey(city, entry.getKey());
+                final String key = this.buildKey(city, entry.getKey());
                 final String json = Session.toJson(entry.getValue());
                 final long ttl = calculateTTL(entry.getKey());
 
@@ -135,8 +135,8 @@ public class RedisCache {
             return Collections.emptyList();
         }
 
-        try (final Jedis jedis = this.jedisPool.getResource()) {
-            final String key = buildKey(city, date);
+        try (Jedis jedis = this.jedisPool.getResource()) {
+            final String key = this.buildKey(city, date);
             final String cached = jedis.get(key);
 
             if (cached == null) {
@@ -168,7 +168,7 @@ public class RedisCache {
      * @return List of dates with cached sessions, sorted in descending order
      */
     public List<LocalDate> getCachedDates(final City city) {
-        try (final Jedis jedis = this.jedisPool.getResource()) {
+        try (Jedis jedis = this.jedisPool.getResource()) {
             final String prefix = city.asPrefix();
             return jedis.keys(prefix + "*").stream()
                 .map(key -> LocalDate.parse(key.substring(prefix.length())))
@@ -189,7 +189,7 @@ public class RedisCache {
      * @return Number of cached date entries
      */
     public long getCacheSize(final City city) {
-        try (final Jedis jedis = this.jedisPool.getResource()) {
+        try (Jedis jedis = this.jedisPool.getResource()) {
             return jedis.keys(city.asPrefix() + "*").size();
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
@@ -205,7 +205,7 @@ public class RedisCache {
      * @param city City to invalidate
      */
     public void invalidateCity(final City city) {
-        try (final Jedis jedis = this.jedisPool.getResource()) {
+        try (Jedis jedis = this.jedisPool.getResource()) {
             final Set<String> keys = jedis.keys(city.asPrefix() + "*");
             if (!keys.isEmpty()) {
                 jedis.del(keys.toArray(new String[0]));
@@ -231,8 +231,8 @@ public class RedisCache {
             return;
         }
 
-        try (final Jedis jedis = this.jedisPool.getResource()) {
-            final String key = buildKey(city, date);
+        try (Jedis jedis = this.jedisPool.getResource()) {
+            final String key = this.buildKey(city, date);
             if (jedis.del(key) > 0) {
                 LOGGER.info(() -> String.format(
                     "Invalidated cache for %s on %s", city.name(), date
@@ -259,8 +259,8 @@ public class RedisCache {
             return;
         }
 
-        try (final Jedis jedis = this.jedisPool.getResource()) {
-            final String key = buildKey(city, date);
+        try (Jedis jedis = this.jedisPool.getResource()) {
+            final String key = this.buildKey(city, date);
             jedis.del(key);
             jedis.set(key, Session.toJson(sessions));
             jedis.expire(key, calculateTTL(date));
