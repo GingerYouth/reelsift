@@ -164,6 +164,9 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
                     throw new RuntimeException(e);
                 }
                 break;
+
+            default:
+                showMainKeyboard(chatIdStr, "Выберите действие: ");
         }
     }
 

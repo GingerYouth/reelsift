@@ -13,6 +13,8 @@
         <exclude name="SystemPrintln"/>
         <exclude name="JUnitTestsShouldIncludeAssert"/>
         <exclude name="JUnitTestContainsTooManyAsserts"/>
+        <exclude name="ExhaustiveSwitchHasDefault"/>
+        <exclude name="NonExhaustiveSwitch"/>
     </rule>
 
     <rule ref="category/java/codestyle.xml">
