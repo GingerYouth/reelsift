@@ -29,10 +29,11 @@ public class AfishaParser {
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
     private static final String TODAY = "na-segodnya";
-    public static final String SCHEDULE_PAGE = "%s?view=list&sort=rating&date=%s&page=%d&pageSize=24";
+    public static final String SCHEDULE_PAGE = "%s/%s/page%d/";
 
     private final String currentDatePeriod;
     private final String filmsPageN;
+    private static final DateTimeFormatter SCHEDULE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private static final String USER_AGENT =
         "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "
@@ -46,8 +47,7 @@ public class AfishaParser {
     public AfishaParser(final City city) throws IOException {
         this.filmsPageN = "https://www.afisha.ru/" + city.asCode() + "/schedule_cinema/%s/page%d/";
         this.cookies = this.getCookies();
-        this.currentDatePeriod = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-            + "--" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        this.currentDatePeriod = LocalDate.now().format(SCHEDULE_DATE_FORMATTER);
     }
 
     private Map<String, String> getCookies() throws IOException {
@@ -165,13 +165,24 @@ public class AfishaParser {
      * @return The list of {@link Session}
      */
     public List<Session> parseSchedule(final String link) throws IOException {
+        return parseSchedule(link, this.currentDatePeriod);
+    }
+
+    /**
+     * Parse specific movie's schedule for a given date.
+     *
+     * @param link The link to the specific movie's schedule
+     * @param date The date in dd-MM-yyyy format
+     * @return The list of {@link Session}
+     */
+    public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
         int page = 1;
         String jsonPage;
         Set<String> prevCinemas = new HashSet<>();
         do {
             try {
-                jsonPage = parseSchedulePage(String.format(SCHEDULE_PAGE, link, this.currentDatePeriod, page));
+                jsonPage = parseSchedulePage(String.format(SCHEDULE_PAGE, link, date, page));
                 final List<Session> sessions = getSessions(jsonPage);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
