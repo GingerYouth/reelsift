@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import utils.PropertiesLoader;
 
+@SuppressWarnings("PMD.AvoidPrintStackTrace")
 public class MessageSender {
     public static final String HTML = "HTML";
     private final TelegramClient telegramClient;
@@ -14,7 +15,7 @@ public class MessageSender {
         this.telegramClient = new OkHttpTelegramClient(PropertiesLoader.get("tgApiKey"));
     }
 
-    public void sendMessage(String chatId, String message) {
+    public void sendMessage(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         sendMessage.setParseMode(HTML);
         try {
@@ -26,7 +27,7 @@ public class MessageSender {
         }
     }
 
-    public void sendMessage(SendMessage message) {
+    public void sendMessage(final SendMessage message) {
         message.setParseMode(HTML);
         try {
             this.telegramClient.execute(message);

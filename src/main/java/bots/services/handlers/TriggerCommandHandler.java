@@ -14,13 +14,18 @@ public class TriggerCommandHandler implements CommandHandler<TriggerCommand> {
     private final KeyboardService keyboardService;
     private final SearchService searchService;
 
-    public TriggerCommandHandler(UserService userService, KeyboardService keyboardService, SearchService searchService) {
+    public TriggerCommandHandler(
+        final UserService userService,
+        final KeyboardService keyboardService,
+        final SearchService searchService
+    ) {
         this.userService = userService;
         this.keyboardService = keyboardService;
         this.searchService = searchService;
     }
 
     @Override
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.AvoidThrowingRawExceptionTypes"})
     public void handle(final long chatId, final String chatIdStr, final TriggerCommand command) {
         switch (command) {
             case DATE:

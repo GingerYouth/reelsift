@@ -6,19 +6,22 @@ import bots.enums.Guide;
 import bots.enums.UserState;
 import bots.services.KeyboardService;
 import bots.services.UserService;
+import filters.Genre;
 
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EditCommandHandler implements CommandHandler<EditCommand> {
     private final UserService userService;
     private final KeyboardService keyboardService;
 
-    public EditCommandHandler(UserService userService, KeyboardService keyboardService) {
+    public EditCommandHandler(final UserService userService, final KeyboardService keyboardService) {
         this.userService = userService;
         this.keyboardService = keyboardService;
     }
 
     @Override
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     public void handle(final long chatId, final String chatIdStr, final EditCommand command) {
         switch (command) {
             case EXCLUDED:
@@ -39,18 +42,21 @@ public class EditCommandHandler implements CommandHandler<EditCommand> {
 
             case MANDATORY:
                 this.userService.setUserState(chatId, UserState.AWAITING_MANDATORY);
-                final String mandatoryAsStr = this.userService.getMandatoryGenres(chatId)
-                    .stream()
-                    .map(Enum::name)
-                    .collect(Collectors.joining(", "));
-                keyboardService.showMainKeyboard(
-                    chatIdStr,
-                    String.format(
-                        "Текущие предпочтения: %s\n\n%s",
-                        mandatoryAsStr.isEmpty() ? Common.NOT_SET_UP.getName() : mandatoryAsStr,
-                        Guide.MANDATORY
-                    )
-                );
+                final Set<Genre> currentMandatory = this.userService.getMandatoryGenres(chatId);
+                if (currentMandatory != null && !currentMandatory.isEmpty()) {
+                    final String mandatoryAsStr = currentMandatory
+                        .stream()
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
+                    this.keyboardService.showMainKeyboard(
+                        chatIdStr,
+                        String.format(
+                            "Текущие предпочтения: %s\n\n%s",
+                            mandatoryAsStr.isEmpty() ? Common.NOT_SET_UP.getName() : mandatoryAsStr,
+                            Guide.MANDATORY
+                        )
+                    );
+                }
                 break;
 
             case TIME:

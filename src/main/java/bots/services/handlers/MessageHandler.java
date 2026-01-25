@@ -40,7 +40,7 @@ public class MessageHandler {
         );
     }
 
-    public void handleCityChange(long chatId, String chatIdString, String text) {
+    public void handleCityChange(final long chatId, final String chatIdString, final String text) {
         if ("спб".equalsIgnoreCase(text)) {
             userService.setUserCity(chatId, parser.City.SPB);
             keyboardService.showMainKeyboard(chatIdString, "Город изменен на Санкт-Петербург.");

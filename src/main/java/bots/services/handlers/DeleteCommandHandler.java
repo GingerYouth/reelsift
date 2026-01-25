@@ -9,7 +9,7 @@ public class DeleteCommandHandler implements CommandHandler<DeleteCommand> {
     private final UserService userService;
     private final KeyboardService keyboardService;
 
-    public DeleteCommandHandler(UserService userService, KeyboardService keyboardService) {
+    public DeleteCommandHandler(final UserService userService, final KeyboardService keyboardService) {
         this.userService = userService;
         this.keyboardService = keyboardService;
     }

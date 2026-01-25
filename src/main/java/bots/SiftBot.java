@@ -67,7 +67,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         this.messageHandler.processCommand(chatId, chatIdString, text);
     }
     
-    private boolean isExistingUser(long chatId) {
+    private boolean isExistingUser(final long chatId) {
         return this.userService.hasUserCity(chatId);
     }
 }

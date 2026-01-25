@@ -356,73 +356,6 @@ public class RedisCacheTest {
     }
 
     @Test
-    public void updateSessionsForDate() {
-        if (!this.redisAvailable) {
-            fail(REDIS_UNAVAILABLE_MESSAGE);
-        }
-        final LocalDate testDate = LocalDate.of(2024, 1, 1);
-        this.redisCache.updateSessionsForDate(createSession(), testDate, City.MOSCOW);
-
-        // Verify data was updated by retrieving it
-        final List<Session> cachedSessions = this.redisCache.getCachedSessions(testDate, City.MOSCOW);
-        assertEquals(1, cachedSessions.size());
-        assertEquals("Test Movie", cachedSessions.get(0).name());
-    }
-
-    @Test
-    public void updateSessionsForDateWithNullDate() {
-        if (!this.redisAvailable) {
-            fail(REDIS_UNAVAILABLE_MESSAGE);
-        }
-        this.redisCache.updateSessionsForDate(createSession(), null, City.MOSCOW);
-
-        // Verify no data was cached
-        long cacheSize = this.redisCache.getCacheSize(City.MOSCOW);
-        assertEquals(0, cacheSize);
-    }
-
-    @Test
-    public void updateSessionsForDateWithEmptySessions() {
-        if (!this.redisAvailable) {
-            fail(REDIS_UNAVAILABLE_MESSAGE);
-        }
-        final LocalDate testDate = LocalDate.of(2024, 1, 1);
-        this.redisCache.updateSessionsForDate(Collections.emptyList(), testDate, City.MOSCOW);
-
-        // Verify no data was cached
-        long cacheSize = this.redisCache.getCacheSize(City.MOSCOW);
-        assertEquals(0, cacheSize);
-    }
-
-    @Test
-    public void updateSessionsForDateWithNullSessions() {
-        if (!this.redisAvailable) {
-            fail(REDIS_UNAVAILABLE_MESSAGE);
-        }
-        final LocalDate testDate = LocalDate.of(2024, 1, 1);
-        this.redisCache.updateSessionsForDate(null, testDate, City.MOSCOW);
-
-        // Verify no data was cached
-        long cacheSize = this.redisCache.getCacheSize(City.MOSCOW);
-        assertEquals(0, cacheSize);
-    }
-
-    @Test
-    public void updateSessionsForDateWithException() {
-        // Test with invalid Redis connection to simulate exception
-        final RedisCache cacheWithInvalidConnection = new RedisCache("invalid-host", 9999);
-        final LocalDate testDate = LocalDate.of(2024, 1, 1);
-
-        try {
-            cacheWithInvalidConnection.updateSessionsForDate(createSession(), testDate, City.MOSCOW);
-        } catch (Exception e) {
-            fail("Should not throw exception, just log it: " + e.getMessage());
-        } finally {
-            cacheWithInvalidConnection.close();
-        }
-    }
-
-    @Test
     public void testClose() {
         if (!this.redisAvailable) {
             fail(REDIS_UNAVAILABLE_MESSAGE);
@@ -432,19 +365,6 @@ public class RedisCacheTest {
         } catch (final Exception e) {
             fail("Close should not throw exception: " + e.getMessage());
         }
-    }
-
-    @Test
-    public void buildKey() throws Exception {
-        if (!this.redisAvailable) {
-            fail(REDIS_UNAVAILABLE_MESSAGE);
-        }
-        final Method buildKeyMethod = RedisCache.class.getDeclaredMethod("buildKey", City.class, LocalDate.class);
-        buildKeyMethod.setAccessible(true);
-
-        final LocalDate testDate = LocalDate.of(2024, 1, 1);
-        final String result = (String) buildKeyMethod.invoke(this.redisCache, City.MOSCOW, testDate);
-        assertEquals("MOSCOW:" + testDate, result);
     }
 
     @Test

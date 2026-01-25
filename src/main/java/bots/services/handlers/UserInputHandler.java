@@ -12,7 +12,7 @@ public class UserInputHandler {
     private final UserService userService;
     private final KeyboardService keyboardService;
 
-    public UserInputHandler(UserService userService, KeyboardService keyboardService) {
+    public UserInputHandler(final UserService userService, final KeyboardService keyboardService) {
         this.userService = userService;
         this.keyboardService = keyboardService;
     }
@@ -47,7 +47,7 @@ public class UserInputHandler {
         }
     }
 
-    private void handleDateInput(long chatId, String chatIdStr, String input) {
+    private void handleDateInput(final long chatId, final String chatIdStr, final String input) {
         try {
             final DateInterval dateInterval = InputValidator.validateDateInput(input);
             this.userService.setDateFilter(chatId, dateInterval);
@@ -58,7 +58,7 @@ public class UserInputHandler {
         }
     }
 
-    private void handleExcludedGenresInput(long chatId, String chatIdStr, String input) {
+    private void handleExcludedGenresInput(final long chatId, final String chatIdStr, final String input) {
         final Genre.ParseResult excludedResult = Genre.parseGenres(input);
         if (excludedResult.invalidGenres().isEmpty()) {
             this.userService.setExcludedGenres(chatId, excludedResult.validGenres());
@@ -71,7 +71,7 @@ public class UserInputHandler {
         }
     }
 
-    private void handleMandatoryGenresInput(long chatId, String chatIdStr, String input) {
+    private void handleMandatoryGenresInput(final long chatId, final String chatIdStr, final String input) {
         final Genre.ParseResult mandatoryResult = Genre.parseGenres(input);
         if (mandatoryResult.invalidGenres().isEmpty()) {
             this.userService.setMandatoryGenres(chatId, mandatoryResult.validGenres());
@@ -84,13 +84,13 @@ public class UserInputHandler {
         }
     }
 
-    private void handleTimeInput(long chatId, String chatIdStr, String input) {
+    private void handleTimeInput(final long chatId, final String chatIdStr, final String input) {
         this.userService.setTimeFilter(chatId, input);
         this.userService.setUserState(chatId, UserState.IDLE);
         this.keyboardService.showMainKeyboard(chatIdStr, "✅ Временной диапазон сохранен: " + input);
     }
 
-    private void handleAiInput(long chatId, String chatIdStr, String input) {
+    private void handleAiInput(final long chatId, final String chatIdStr, final String input) {
         this.userService.setAiPrompt(chatId, input);
         this.userService.setUserState(chatId, UserState.IDLE);
         this.keyboardService.showMainKeyboard(chatIdStr, "✅ AI-запрос принят: " + input);

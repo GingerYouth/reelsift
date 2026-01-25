@@ -25,6 +25,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 /** Afisha.ru parser. */
+@SuppressWarnings("PMD.TooManyMethods")
 public class AfishaParser {
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
@@ -101,16 +102,10 @@ public class AfishaParser {
     public Map<String, String> parseFilmsInDates(final String dates) throws IOException {
         final Map<String, String> films = new TreeMap<>();
         Map<String, String> pageFilms;
-        Set<String> prevFilms = new HashSet<>();
         int page = 0;
         do {
             try {
                 pageFilms = parseFilmsPage(String.format(this.filmsPageN, dates, page));
-                final Set<String> keySet = pageFilms.keySet();
-                if (prevFilms.equals(keySet)) {
-                    break;
-                }
-                prevFilms = keySet;
                 page++;
                 films.putAll(pageFilms);
             } catch (final HttpStatusException httpEx) {
@@ -186,6 +181,7 @@ public class AfishaParser {
                 final List<Session> sessions = getSessions(jsonPage);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
+                    // Because they are showing the same sessions for any pg number > max pg number
                     break;
                 }
                 result.addAll(sessions);

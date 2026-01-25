@@ -2,27 +2,38 @@ package bots.services;
 
 import bots.enums.Guide;
 import cache.RedisCache;
-import filters.*;
+import filters.DateInterval;
+import filters.Filters;
+import filters.Genre;
+import filters.LlmFilter;
+import filters.MandatoryGenres;
+import filters.TimeFilter;
 import parser.AfishaParser;
 import parser.Session;
+import utils.Utils;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.MonthDay;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("PMD.TooManyMethods")
 public class SearchService {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM");
     private final RedisCache redisCache;
     private final MessageSender messageSender;
     private final UserService userService;
 
-    public SearchService(RedisCache redisCache, MessageSender messageSender, UserService userService) {
+    public SearchService(
+        final RedisCache redisCache,
+        final MessageSender messageSender,
+        final UserService userService
+    ) {
         this.redisCache = redisCache;
         this.messageSender = messageSender;
         this.userService = userService;
@@ -34,19 +45,22 @@ public class SearchService {
         final Filters filters = buildFilters(chatId);
         final DateInterval dateInterval = getRequiredDateInterval(chatId);
         
-        cacheMissingData(chatId, dateInterval);
+        this.cacheMissingData(chatId, dateInterval);
         
-        final List<Session> resultSessions = redisCache.getCachedSessions(dateInterval.getDatesInRange(), userService.getUserCity(chatId));
+        final List<Session> resultSessions = this.redisCache.getCachedSessions(
+            dateInterval.getDatesInRange(),
+            this.userService.getUserCity(chatId)
+        );
         final List<Session> filtered = filters.filter(resultSessions);
 
-        messageSender.sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
+        this.messageSender.sendMessage(chatIdString, String.format("\uD83C\uDFAC Найдено %s сеансов!", filtered.size()));
 
         for (final String split : Session.toSplitStrings(filtered)) {
-            messageSender.sendMessage(chatIdString, split);
+            this.messageSender.sendMessage(chatIdString, split);
         }
     }
 
-    private Filters buildFilters(long chatId) {
+    private Filters buildFilters(final long chatId) {
         final Filters filters = new Filters();
         
         addTimeFilter(filters, chatId);
@@ -57,7 +71,7 @@ public class SearchService {
         return filters;
     }
 
-    private void addTimeFilter(Filters filters, long chatId) {
+    private void addTimeFilter(final Filters filters, final long chatId) {
         final String timeFilter = userService.getTimeFilter(chatId);
         if (timeFilter != null) {
             filters.addFilter(
@@ -69,8 +83,8 @@ public class SearchService {
         }
     }
 
-    private void addMandatoryGenresFilter(Filters filters, long chatId) {
-        final var mandatoryGenres = userService.getMandatoryGenres(chatId);
+    private void addMandatoryGenresFilter(final Filters filters, final long chatId) {
+        final Set<Genre> mandatoryGenres = userService.getMandatoryGenres(chatId);
         if (mandatoryGenres != null) {
             filters.addFilter(
                 new MandatoryGenres(
@@ -82,8 +96,8 @@ public class SearchService {
         }
     }
 
-    private void addExcludedGenresFilter(Filters filters, long chatId) {
-        final var excludedGenres = userService.getExcludedGenres(chatId);
+    private void addExcludedGenresFilter(final Filters filters, final long chatId) {
+        final Set<Genre> excludedGenres = userService.getExcludedGenres(chatId);
         if (excludedGenres != null) {
             filters.addFilter(
                 new MandatoryGenres(
@@ -95,7 +109,7 @@ public class SearchService {
         }
     }
 
-    private void addAiFilter(Filters filters, long chatId) {
+    private void addAiFilter(final Filters filters, final long chatId) {
         final String aiPrompt = userService.getAiPrompt(chatId);
         if (aiPrompt != null) {
             final LlmFilter llmFilter = new LlmFilter(aiPrompt);
@@ -103,16 +117,16 @@ public class SearchService {
         }
     }
 
-    private DateInterval getRequiredDateInterval(long chatId) {
+    private DateInterval getRequiredDateInterval(final long chatId) {
         final DateInterval dateInterval = userService.getDateFilter(chatId);
         return dateInterval != null
             ? dateInterval
             : new DateInterval(LocalDate.now(), LocalDate.now());
     }
 
-    private void cacheMissingData(long chatId, DateInterval dateInterval) throws IOException {
+    private void cacheMissingData(final long chatId, final DateInterval dateInterval) throws IOException {
         final List<LocalDate> requiredDates = dateInterval.getDatesInRange();
-        final List<LocalDate> cachedDates = redisCache.getCachedDates(userService.getUserCity(chatId));
+        final List<LocalDate> cachedDates = this.redisCache.getCachedDates(this.userService.getUserCity(chatId));
         final List<LocalDate> missingDates = requiredDates.stream()
             .filter(d -> !cachedDates.contains(d))
             .toList();
@@ -136,15 +150,20 @@ public class SearchService {
                 for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
                     if (missingDates.contains(date)) {
                         final String formattedDate = date.format(scheduleDateFormatter);
-                        final List<Session> missingSessions = parser.parseSchedule(entry.getValue(), formattedDate);
-                        redisCache.cacheSessions(missingSessions, userService.getUserCity(chatId));
+                        final List<Session> missingSessions = parser.parseSchedule(
+                            Utils.removeDateFromUrlEnd(entry.getValue()), formattedDate
+                        );
+                        this.redisCache.cacheSessions(
+                            missingSessions,
+                            this.userService.getUserCity(chatId)
+                        );
                     }
                 }
             }
         }
     }
 
-    private List<String> convertToDateRanges(List<LocalDate> dates) {
+    private List<String> convertToDateRanges(final List<LocalDate> dates) {
         if (dates.isEmpty()) {
             return List.of();
         }
@@ -169,14 +188,14 @@ public class SearchService {
         return ranges;
     }
     
-    private String formatDateRange(LocalDate start, LocalDate end) {
+    private String formatDateRange(final LocalDate start, final LocalDate end) {
         final String startDate = start.format(DATE_FORMATTER);
         final String endDate = end.format(DATE_FORMATTER);
         return startDate + "_" + endDate;
     }
 
     private static LocalDate parseSingleDate(final String dateStr) {
-        final String[] dateParts = dateStr.split("\\.");
+        final String[] dateParts = dateStr.split("-");
         final int day = Integer.parseInt(dateParts[0]);
         final int month = Integer.parseInt(dateParts[1]);
         final int year = Year.now().getValue();

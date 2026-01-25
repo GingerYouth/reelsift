@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"PMD.LooseCoupling", "PMD.ConsecutiveLiteralAppends"})
 public class KeyboardService {
     private final MessageSender messageSender;
     private final UserService userService;
@@ -21,7 +22,7 @@ public class KeyboardService {
         this.userService = userService;
     }
 
-    public void showMainKeyboard(String chatId, String message) {
+    public void showMainKeyboard(final String chatId, final String message) {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         final List<KeyboardRow> keyboard = new ArrayList<>();
 
@@ -39,7 +40,7 @@ public class KeyboardService {
 
         final KeyboardRow row4 = new KeyboardRow();
         row4.add(
-            this.userService.hasSubsFilter(Long.valueOf(chatId))
+            this.userService.hasSubsFilter(Long.parseLong(chatId))
                 ? TriggerCommand.SUBS_DIS.getName()
                 : TriggerCommand.SUBS_EN.getName()
         );
@@ -59,7 +60,7 @@ public class KeyboardService {
         this.messageSender.sendMessage(sendMessage);
     }
 
-    public void showEditMenu(String chatIdStr) {
+    public void showEditMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
         final StringBuilder builder = new StringBuilder(200);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
@@ -102,20 +103,20 @@ public class KeyboardService {
         this.messageSender.sendMessage(message);
     }
 
-    public void showDeleteMenu(String chatIdStr) {
+    public void showDeleteMenu(final String chatIdStr) {
         final long chatId = Long.parseLong(chatIdStr);
         final StringBuilder builder = new StringBuilder(200);
         builder.append("⚙️ <b>Текущие фильтры:</b>\n")
-                .append("\n📅 <b>Дата:</b> ")
-                .append(this.userService.getDateFilter(chatId) != null ? this.userService.getDateFilter(chatId) : "сегодня")
-                .append("\n⏰ <b>Время:</b> ").append(this.userService.getTimeFilter(chatId) != null ? this.userService.getTimeFilter(chatId) : "не задано")
-                .append("\n🚫 <b>Исключения:</b> ")
-                .append(Genre.toStringOrDefault(this.userService.getExcludedGenres(chatId), Common.NOT_SET_UP.getName()))
-                .append("\n✅ <b>Предпочтения:</b> ")
-                .append(Genre.toStringOrDefault(this.userService.getMandatoryGenres(chatId), Common.NOT_SET_UP.getName()))
-                .append("\n🤖 <b>AI-запрос:</b> ").append(this.userService.getAiPrompt(chatId) != null ? this.userService.getAiPrompt(chatId) : "не задан")
-                .append("\n <b>Только фильмы с субтитрами: </b> ")
-                .append(this.userService.hasSubsFilter(chatId) ? "да" : "нет");
+            .append("\n📅 <b>Дата:</b> ")
+            .append(this.userService.getDateFilter(chatId) != null ? this.userService.getDateFilter(chatId) : "сегодня")
+            .append("\n⏰ <b>Время:</b> ").append(this.userService.getTimeFilter(chatId) != null ? this.userService.getTimeFilter(chatId) : "не задано")
+            .append("\n🚫 <b>Исключения:</b> ")
+            .append(Genre.toStringOrDefault(this.userService.getExcludedGenres(chatId), Common.NOT_SET_UP.getName()))
+            .append("\n✅ <b>Предпочтения:</b> ")
+            .append(Genre.toStringOrDefault(this.userService.getMandatoryGenres(chatId), Common.NOT_SET_UP.getName()))
+            .append("\n🤖 <b>AI-запрос:</b> ").append(this.userService.getAiPrompt(chatId) != null ? this.userService.getAiPrompt(chatId) : "не задан")
+            .append("\n <b>Только фильмы с субтитрами: </b> ")
+            .append(this.userService.hasSubsFilter(chatId) ? "да" : "нет");
 
         final SendMessage message = new SendMessage(chatIdStr, builder.toString());
         message.setParseMode(MessageSender.HTML);

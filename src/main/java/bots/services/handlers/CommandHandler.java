@@ -2,12 +2,13 @@ package bots.services.handlers;
 
 import bots.enums.Command;
 
+@FunctionalInterface
 public interface CommandHandler<T extends Command> {
 
     void handle(
-        final long chatId,
-        final String chatIdString,
-        final T delete
+        long chatId,
+        String chatIdString,
+        T delete
     );
 
 }
