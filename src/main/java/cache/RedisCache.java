@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,11 +20,11 @@ import java.util.stream.Collectors;
 
 /**
  * Provides caching functionality for {@link Session} objects using Redis.
- * Stores cinema sessions by city and date to avoid re-fetching identical data
+ * Stores cinema sessions by city, date, and film to avoid re-fetching identical data
  * across multiple user searches.
  *
  * <h2>Key Structure</h2>
- * Keys are organized by city and date: {@code CITY:DATE} (e.g., {@code MOSCOW:2026-01-23})
+ * Keys are organized by city, date, and film: {@code CITY:DATE:FILM} (e.g., {@code MOSCOW:2026-01-23:FilmName})
  *
  * <h2>Expiration</h2>
  * Keys automatically expire at the end of their respective date (23:59:59),
@@ -69,33 +70,57 @@ public class RedisCache {
     }
 
     /**
-     * Caches sessions grouped by date.
+     * Caches sessions grouped by date and film.
      * Sessions are stored as JSON and expire at the end of their respective date.
      *
      * @param sessions Sessions to cache
      * @param city     City for which sessions are cached
      */
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public void cacheSessions(final List<Session> sessions, final City city) {
         if (sessions == null || sessions.isEmpty()) {
             return;
         }
 
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final Map<LocalDate, List<Session>> sessionsByDate = sessions.stream()
-                .collect(Collectors.groupingBy(s -> s.dateTime().toLocalDate()));
-
-            for (final Map.Entry<LocalDate, List<Session>> entry : sessionsByDate.entrySet()) {
-                final String key = this.buildKey(city, entry.getKey());
-                final String json = Session.toJson(entry.getValue());
-                final long ttl = calculateTTL(entry.getKey());
-
-                jedis.set(key, json);
-                jedis.expire(key, ttl);
-
-                LOGGER.fine(() -> String.format(
-                    "Cached %d sessions for %s on %s (TTL: %d seconds)",
-                    entry.getValue().size(), city.name(), entry.getKey(), ttl
+            final Map<LocalDate, Map<String, List<Session>>> sessionsByDateAndFilm = sessions.stream()
+                .collect(Collectors.groupingBy(
+                    s -> s.dateTime().toLocalDate(),
+                    Collectors.groupingBy(Session::name)
                 ));
+
+            for (final Map.Entry<LocalDate, Map<String, List<Session>>> dateEntry : sessionsByDateAndFilm.entrySet()) {
+                final LocalDate date = dateEntry.getKey();
+                final long ttl = calculateTTL(date);
+
+                for (final Map.Entry<String, List<Session>> filmEntry : dateEntry.getValue().entrySet()) {
+                    final String filmName = filmEntry.getKey();
+                    final List<Session> filmSessions = filmEntry.getValue();
+                    final String key = this.buildKey(city, date, filmName);
+
+                    // Get existing sessions and merge with new ones
+                    final String existingJson = jedis.get(key);
+                    final List<Session> allSessions = new ArrayList<>();
+                    if (existingJson != null) {
+                        allSessions.addAll(Session.fromJsonArray(existingJson));
+                    }
+                    allSessions.addAll(filmSessions);
+
+                    // Remove duplicates by using a set of unique session identifiers
+                    final List<Session> uniqueSessions = allSessions.stream()
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                    final String json = Session.toJson(uniqueSessions);
+                    jedis.set(key, json);
+                    jedis.expire(key, ttl);
+
+                    LOGGER.fine(() -> String.format(
+                        "Cached %d sessions (%d new, %d existing) for %s on %s - %s (TTL: %d seconds)",
+                        uniqueSessions.size(), filmSessions.size(), 
+                        allSessions.size() - filmSessions.size(), city.name(), date, filmName, ttl
+                    ));
+                }
             }
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
@@ -123,7 +148,7 @@ public class RedisCache {
             .collect(Collectors.toList());
     }
 
-    /**
+/**
      * Retrieves cached sessions for a single date.
      *
      * @param date Date to retrieve sessions for
@@ -136,22 +161,31 @@ public class RedisCache {
         }
 
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final String key = this.buildKey(city, date);
-            final String cached = jedis.get(key);
-
-            if (cached == null) {
+            final String prefix = city.asPrefix() + date + ":";
+            final Set<String> keys = jedis.keys(prefix + "*");
+            
+            if (keys.isEmpty()) {
                 LOGGER.fine(() -> String.format(
                     "Cache miss for %s on %s", city.name(), date
                 ));
                 return Collections.emptyList();
             }
 
-            final List<Session> sessions = Session.fromJsonArray(cached);
+            final List<Session> allSessions = new ArrayList<>();
+            for (final String key : keys) {
+                final String cached = jedis.get(key);
+                if (cached != null) {
+                    final List<Session> sessions = Session.fromJsonArray(cached);
+                    allSessions.addAll(sessions);
+                }
+            }
+
             LOGGER.fine(() -> String.format(
-                "Cache hit: Retrieved %d sessions for %s on %s", sessions.size(), city.name(), date
+                "Cache hit: Retrieved %d sessions for %s on %s from %d film entries", 
+                allSessions.size(), city.name(), date, keys.size()
             ));
 
-            return sessions;
+            return allSessions;
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
                 "Failed to retrieve cached sessions for %s on %s: %s",
@@ -161,7 +195,7 @@ public class RedisCache {
         }
     }
 
-    /**
+/**
      * Retrieves all cached dates for a city.
      *
      * @param city City to retrieve cached dates for
@@ -171,7 +205,14 @@ public class RedisCache {
         try (Jedis jedis = this.jedisPool.getResource()) {
             final String prefix = city.asPrefix();
             return jedis.keys(prefix + "*").stream()
-                .map(key -> LocalDate.parse(key.substring(prefix.length())))
+                .map(key -> {
+                    final String datePart = key.substring(prefix.length());
+                    // Extract date part before the first colon (if it exists)
+                    final int colonIndex = datePart.indexOf(':');
+                    return colonIndex > 0 ? datePart.substring(0, colonIndex) : datePart;
+                })
+                .distinct() // Remove duplicates since we now have multiple films per date
+                .map(LocalDate::parse)
                 .sorted()
                 .collect(Collectors.toList());
         } catch (final Exception e) {
@@ -232,10 +273,12 @@ public class RedisCache {
         }
 
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final String key = this.buildKey(city, date);
-            if (jedis.del(key) > 0) {
+            final String prefix = city.asPrefix() + date + ":";
+            final Set<String> keys = jedis.keys(prefix + "*");
+            if (!keys.isEmpty()) {
+                jedis.del(keys.toArray(new String[0]));
                 LOGGER.info(() -> String.format(
-                    "Invalidated cache for %s on %s", city.name(), date
+                    "Invalidated %d cache entries for %s on %s", keys.size(), city.name(), date
                 ));
             }
         } catch (final Exception e) {
@@ -247,31 +290,21 @@ public class RedisCache {
     }
 
     /**
-     * Updates sessions for a specific date (replaces existing cache).
-     * Useful for partial refreshes without clearing all cached dates.
-     *
-     * @param sessions New sessions to store
-     * @param date     Date to update
-     * @param city     City to update
+     * Manually invalidates all cached entries.
+     * Clears the entire Redis cache of all sessions.
      */
-    public void updateSessionsForDate(final List<Session> sessions, final LocalDate date, final City city) {
-        if (date == null || sessions == null || sessions.isEmpty()) {
-            return;
-        }
-
+    public void invalidateAll() {
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final String key = this.buildKey(city, date);
-            jedis.del(key);
-            jedis.set(key, Session.toJson(sessions));
-            jedis.expire(key, calculateTTL(date));
-
-            LOGGER.info(() -> String.format(
-                "Updated %d sessions for %s on %s", sessions.size(), city.name(), date
-            ));
+            final Set<String> keys = jedis.keys("*");
+            if (!keys.isEmpty()) {
+                jedis.del(keys.toArray(new String[0]));
+                LOGGER.info(() -> String.format(
+                    "Invalidated all %d cache entries", keys.size()
+                ));
+            }
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
-                "Failed to update sessions for %s on %s: %s",
-                city.name(), date, e.getMessage()
+                "Failed to invalidate all cache entries: %s", e.getMessage()
             ));
         }
     }
@@ -287,15 +320,16 @@ public class RedisCache {
         }
     }
 
-    /**
-     * Builds a cache key for the given city and date.
+/**
+     * Builds a cache key for the given city, date, and film.
      *
-     * @param city City component
-     * @param date Date component
-     * @return Cache key in format {@code CITY:DATE}
+     * @param city     City component
+     * @param date     Date component
+     * @param filmName Film name component
+     * @return Cache key in format {@code CITY:DATE:FILM}
      */
-    private String buildKey(final City city, final LocalDate date) {
-        return city.asPrefix() + date;
+    private String buildKey(final City city, final LocalDate date, final String filmName) {
+        return city.asPrefix() + date + ":" + filmName;
     }
 
     /**

@@ -3,6 +3,7 @@ package parser;
 import filters.ExcludedGenres;
 import filters.Filters;
 import filters.MandatoryGenres;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
