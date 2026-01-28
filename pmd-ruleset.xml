@@ -21,6 +21,7 @@
         <exclude name="LongVariable"/>
         <exclude name="OnlyOneReturn"/>
         <exclude name="AtLeastOneConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
     </rule>
 
     <rule ref="category/java/design.xml">
