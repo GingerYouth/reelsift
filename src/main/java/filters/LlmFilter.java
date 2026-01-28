@@ -10,8 +10,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/** LLM filter. */
-public class LlmFilter implements Filter {
+/**
+ * LLM-based filter that uses AI recommendations to filter sessions.
+ * Sends movie information to DeepSeek API and returns sessions matching
+ * recommended movies.
+ */
+public final class LlmFilter implements Filter {
     private static final String BASE =
         """
             Я хочу сходить в кинотеатр и посмотреть %s
@@ -19,9 +23,26 @@ public class LlmFilter implements Filter {
         """;
 
     private final String request;
+    private final DeepSeekService deepSeekService;
 
-    public LlmFilter(final String request) {
+    /**
+     * Primary constructor with dependency injection.
+     *
+     * @param request User's movie preference request
+     * @param deepSeekService Service for getting AI recommendations
+     */
+    public LlmFilter(final String request, final DeepSeekService deepSeekService) {
         this.request = String.format(BASE, request);
+        this.deepSeekService = deepSeekService;
+    }
+
+    /**
+     * Secondary constructor using default DeepSeekService.
+     *
+     * @param request User's movie preference request
+     */
+    public LlmFilter(final String request) {
+        this(request, new DeepSeekService());
     }
 
     @Override
@@ -36,7 +57,7 @@ public class LlmFilter implements Filter {
         if (movies.isEmpty()) {
             return Stream.empty();
         }
-        final List<Movie> recommendedMovies = new DeepSeekService().getMovieRecommendations(this.request, movies);
+        final List<Movie> recommendedMovies = this.deepSeekService.getMovieRecommendations(this.request, movies);
         final Set<String> recommendedTitles = recommendedMovies
             .stream()
             .map(Movie::title)
