@@ -2,10 +2,8 @@ package parser;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,9 +13,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -25,7 +20,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 /** Afisha.ru parser. */
-@SuppressWarnings("PMD.TooManyMethods")
 public class AfishaParser {
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
@@ -178,7 +172,7 @@ public class AfishaParser {
         do {
             try {
                 jsonPage = parseSchedulePage(String.format(SCHEDULE_PAGE, link, date, page));
-                final List<Session> sessions = getSessions(jsonPage);
+                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
                     // Because they are showing the same sessions for any pg number > max pg number
@@ -207,74 +201,5 @@ public class AfishaParser {
             .timeout(15_000)
             .execute()
             .body();
-    }
-
-    private static List<Session> getSessions(final String json) {
-        if (json.isEmpty()) {
-            return Collections.emptyList();
-        }
-        final List<Session> result = new ArrayList<>();
-        final JSONObject root = new JSONObject(json);
-        final JSONObject info = root.getJSONObject("MovieCard").getJSONObject("Info");
-
-        final List<String> genres = extractGenres(info);
-        final JSONObject distributorInfo = extractDistributorInfo(info);
-
-        final JSONArray items = root
-            .getJSONObject("ScheduleWidget")
-            .getJSONObject("ScheduleList")
-            .getJSONArray("Items");
-
-        for (int i = 0; i < items.length(); i++) {
-            final JSONObject item = items.getJSONObject(i);
-            final JSONObject place = item.getJSONObject("Place");
-            final JSONArray sessions = item.getJSONArray("Sessions");
-            result.addAll(createSessionsForItem(sessions, info, distributorInfo, genres, place));
-        }
-        return result;
-    }
-
-    private static List<String> extractGenres(final JSONObject info) {
-        final JSONArray genresArray = info.getJSONObject("Genres").getJSONArray("Links");
-        final List<String> genres = new ArrayList<>();
-        for (int i = 0; i < genresArray.length(); i++) {
-            genres.add(((JSONObject) genresArray.get(i)).get("Name").toString());
-        }
-        return genres;
-    }
-
-    private static JSONObject extractDistributorInfo(final JSONObject info) {
-        try {
-            return info.getJSONObject("DistributorInfo");
-        } catch (final JSONException ignored) {
-            return null;
-        }
-    }
-
-    private static List<Session> createSessionsForItem(
-        final JSONArray sessions,
-        final JSONObject info,
-        final JSONObject distributorInfo,
-        final List<String> genres,
-        final JSONObject place
-    ) {
-        final List<Session> result = new ArrayList<>();
-        for (int j = 0; j < sessions.length(); j++) {
-            final JSONObject session = sessions.getJSONObject(j);
-            final String price = session.get("MinPriceFormatted").toString();
-            result.add(new Session(
-                LocalDateTime.parse(session.get("DateTime").toString()),
-                info.get("Name").toString(),
-                distributorInfo == null ? "" : distributorInfo.get("Text").toString(),
-                info.get("Verdict").toString(),
-                genres,
-                place.getString("Name"),
-                place.get("Address").toString(),
-                "null".equals(price) ? -1 : Integer.parseInt(price),
-                "link",
-                "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString())
-            ));
-        }
-        return result;
     }
 }
