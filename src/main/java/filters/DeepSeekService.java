@@ -15,7 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** DeepSeek service. */
+/**
+ * Service for getting movie recommendations from DeepSeek AI API.
+ * Sends user preferences and available movies to the API and parses
+ * the response to filter matching movies.
+ */
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DeepSeekService {
     private static final String API_URL = "https://api.deepseek.com/v1/chat/completions";
@@ -23,15 +27,33 @@ public class DeepSeekService {
     private final String model;
     private final HttpClient httpClient;
 
+    /**
+     * Default constructor using default model.
+     */
     public DeepSeekService() {
         this("deepseek-chat");
     }
 
+    /**
+     * Constructor with custom model, creates default HttpClient.
+     *
+     * @param model The model name to use for API calls
+     */
     public DeepSeekService(final String model) {
-        this.model = model;
-        this.httpClient = HttpClient.newBuilder()
+        this(model, HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(30))
-            .build();
+            .build());
+    }
+
+    /**
+     * Primary constructor with dependency injection for testing.
+     *
+     * @param model The model name to use for API calls
+     * @param httpClient HttpClient for making API requests
+     */
+    DeepSeekService(final String model, final HttpClient httpClient) {
+        this.model = model;
+        this.httpClient = httpClient;
     }
 
     public List<Movie> getMovieRecommendations(final String userRequest, final List<Movie> movies) {
