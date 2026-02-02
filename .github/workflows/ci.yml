@@ -1,4 +1,4 @@
-name: Checkstyle, PMD, tests
+name: CI
 
 on:
   push:
