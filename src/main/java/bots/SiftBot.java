@@ -18,7 +18,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 /** Telegram bot logic. */
 public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
 
-    private static final Logger logger = LoggerFactory.getLogger(SiftBot.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SiftBot.class);
     private final RedisCache redisCache;
     private final MessageHandler messageHandler;
     private final UserService userService;
@@ -45,6 +45,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void consume(final Update update) {
         try {
             if (!update.hasMessage() || !update.getMessage().hasText()) {
@@ -55,7 +56,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             final String chatIdString = String.valueOf(chatId);
             final String text = update.getMessage().getText();
             
-            logger.debug("Received update from user {}: {}", chatId, text);
+            LOGGER.debug("Received update from user {}: {}", chatId, text);
 
             // Check if it's a city change command
             if ("спб".equalsIgnoreCase(text) || "мск".equalsIgnoreCase(text)) {
@@ -72,7 +73,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             // Process commands and user input
             this.messageHandler.processCommand(chatId, chatIdString, text);
         } catch (final Exception e) {
-            logger.error("An unexpected error occurred while processing an update: {}", update, e);
+            LOGGER.error("An unexpected error occurred while processing an update: {}", update, e);
         }
     }
     

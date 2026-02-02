@@ -8,12 +8,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.json.JSONException;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -24,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 /** Afisha.ru parser. */
 public class AfishaParser {
-    private static final Logger logger = LoggerFactory.getLogger(AfishaParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AfishaParser.class);
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
     private static final String TODAY = "na-segodnya";
@@ -43,8 +45,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 3000; // Minimum delay in milliseconds
-    private static final int MAX_DELAY_MS = 5000; // Maximum delay in milliseconds
+    private static final int MIN_DELAY_MS = 1000; // Minimum delay in milliseconds
+    private static final int MAX_DELAY_MS = 3000; // Maximum delay in milliseconds
     private static final Random RANDOM = new Random();
 
     public AfishaParser(final City city) throws IOException {
@@ -61,9 +63,11 @@ public class AfishaParser {
                 .userAgent(USER_AGENT)
                 .execute();
             cookies = initialResponse.cookies();
-            logger.debug("Initial cookies: {}", cookies);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Initial cookies: {}", cookies);
+            }
         } catch (IOException e) {
-            logger.error("Failed to get initial cookies: {}", e.getMessage());
+            LOGGER.error("Failed to get initial cookies: {}", e.getMessage());
             throw e;
         }
         return cookies;
@@ -82,11 +86,15 @@ public class AfishaParser {
         do {
             try {
                 final String url = String.format(this.filmsPageN, TODAY, page);
-                logger.debug("Parsing films from: {}", url);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Parsing films from: {}", url);
+                }
                 pageFilms = parseFilmsPage(url);
                 final Set<String> keySet = pageFilms.keySet();
                 if (prevFilms.equals(keySet)) {
-                    logger.debug("Found duplicate film page, stopping parse.");
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Found duplicate film page, stopping parse.");
+                    }
                     break;
                 }
                 prevFilms = keySet;
@@ -94,11 +102,11 @@ public class AfishaParser {
                 films.putAll(pageFilms);
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                logger.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
                 break;
             }
         } while (!pageFilms.isEmpty());
-        logger.info("Parsed {} films for today.", films.size());
+        LOGGER.info("Parsed {} films for today.", films.size());
         return films;
     }
 
@@ -114,17 +122,19 @@ public class AfishaParser {
         do {
             try {
                 final String url = String.format(this.filmsPageN, dates, page);
-                logger.debug("Parsing films from: {}", url);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Parsing films from: {}", url);
+                }
                 pageFilms = parseFilmsPage(url);
                 page++;
                 films.putAll(pageFilms);
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                logger.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
                 break;
             }
         } while (!pageFilms.isEmpty());
-        logger.info("Parsed {} films for dates {}.", films.size(), dates);
+        LOGGER.info("Parsed {} films for dates {}.", films.size(), dates);
         return films;
     }
 
@@ -138,31 +148,39 @@ public class AfishaParser {
         final Document document = Jsoup.connect(link).userAgent(USER_AGENT).get();
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
         for (final Element container : filmContainers) {
-            List<Element> linkElements = container.getElementsByAttributeValue(
-                "data-test", "LINK LINK-BUTTON TICKET-BUTTON"
-            );
-            if (linkElements.isEmpty()) {
-                linkElements = container.getElementsByAttributeValue("data-test", "LINK LINK-BUTTON");
-            }
-            if (!linkElements.isEmpty()) {
-                final String refElement = linkElements.getFirst().toString();
-                final Matcher matcher = FILM_REF_PATTERN.matcher(refElement);
-                if (matcher.find()) {
-                    final String href = matcher.group(1);
-                    if (href.contains("/schedule_cinema_product/")) {
-                        schedules.put(
-                            container.getElementsByAttributeValue("data-test", "LINK ITEM-NAME ITEM-URL").text(),
-                            BASE_LINK + href
-                        );
-                    } else {
-                        logger.debug("Skipping non-cinema product link: {}", href);
-                    }
-                } else {
-                    logger.warn("Film ref not found in element: {}", refElement);
-                }
-            }
+            extractFilmFromContainer(container).ifPresent(film -> schedules.put(film.getKey(), film.getValue()));
         }
         return schedules;
+    }
+
+    private static Optional<Map.Entry<String, String>> extractFilmFromContainer(final Element container) {
+        List<Element> linkElements = container.getElementsByAttributeValue(
+            "data-test", "LINK LINK-BUTTON TICKET-BUTTON"
+        );
+        if (linkElements.isEmpty()) {
+            linkElements = container.getElementsByAttributeValue("data-test", "LINK LINK-BUTTON");
+        }
+
+        if (!linkElements.isEmpty()) {
+            final String refElement = linkElements.getFirst().toString();
+            final Matcher matcher = FILM_REF_PATTERN.matcher(refElement);
+            if (matcher.find()) {
+                final String href = matcher.group(1);
+                if (href.contains("/schedule_cinema_product/")) {
+                    return Optional.of(Map.entry(
+                        container.getElementsByAttributeValue("data-test", "LINK ITEM-NAME ITEM-URL").text(),
+                        BASE_LINK + href
+                    ));
+                } else {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Skipping non-cinema product link: {}", href);
+                    }
+                }
+            } else {
+                LOGGER.warn("Film ref not found in element: {}", refElement);
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -190,12 +208,16 @@ public class AfishaParser {
         do {
             try {
                 final String url = String.format(SCHEDULE_PAGE, link, date, page);
-                logger.debug("Parsing schedule from: {}", url);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Parsing schedule from: {}", url);
+                }
                 jsonPage = parseSchedulePage(url);
                 final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
-                    logger.debug("Found duplicate schedule page, stopping parse.");
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Found duplicate schedule page, stopping parse.");
+                    }
                     break;
                 }
                 result.addAll(sessions);
@@ -203,14 +225,14 @@ public class AfishaParser {
                 page++;
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                logger.warn("HTTP error fetching schedule page: {}", httpEx.getMessage());
+                LOGGER.warn("HTTP error fetching schedule page: {}", httpEx.getMessage());
                 break;
-            } catch (final Exception e) {
-                logger.error("Error parsing schedule for link {} and date {}", link, date, e);
-                throw e;
+            } catch (final JSONException | IOException e) {
+                LOGGER.error("Error parsing schedule for link {} and date {}", link, date, e);
+                throw new IOException("Failed to parse schedule", e);
             }
         } while (!jsonPage.isEmpty());
-        logger.info("Parsed {} sessions for link {} and date {}.", result.size(), link, date);
+        LOGGER.info("Parsed {} sessions for link {} and date {}.", result.size(), link, date);
         return result;
     }
 
@@ -232,11 +254,15 @@ public class AfishaParser {
     private static void addRandomDelay() {
         try {
             final long delay = RANDOM.nextInt(MAX_DELAY_MS - MIN_DELAY_MS) + MIN_DELAY_MS;
-            logger.debug("Adding a delay of {}ms before the next request.", delay);
+            if (LOGGER.isDebugEnabled()) {
+                if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Adding a delay of {}ms before the next request.", delay);
+            }
+            }
             Thread.sleep(delay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            logger.warn("Thread interrupted during delay.", e);
+            LOGGER.warn("Thread interrupted during delay.", e);
         }
     }
 }
