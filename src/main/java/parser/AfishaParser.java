@@ -43,8 +43,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 20000; // Minimum delay in milliseconds
-    private static final int MAX_DELAY_MS = 22000; // Maximum delay in milliseconds
+    private static final int MIN_DELAY_MS = 3000; // Minimum delay in milliseconds
+    private static final int MAX_DELAY_MS = 5000; // Maximum delay in milliseconds
     private static final Random RANDOM = new Random();
 
     public AfishaParser(final City city) throws IOException {
