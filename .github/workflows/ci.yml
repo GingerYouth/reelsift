@@ -9,7 +9,55 @@ on:
   pull_request:
 
 jobs:
-  codecheck:
+  checkstyle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Run Checkstyle
+        run: mvn checkstyle:check
+
+  pmd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Run PMD
+        run: mvn pmd:check
+
+  tests:
     runs-on: ubuntu-latest
 
     services:
@@ -27,17 +75,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 24 for build
+      - name: Set up JDK 24
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '24'
-
-      - name: Run Checkstyle via Maven
-        run: mvn checkstyle:check
-
-      - name: PMD
-        run: mvn pmd:check
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -52,7 +94,3 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
         run: mvn -B -V -Dcheckstyle.skip=true -Dpmd.skip=true test
-
-      - name: Fail build if there are violations
-        if: steps.pmd.outputs.violations != 0
-        run: exit 1
