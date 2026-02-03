@@ -45,8 +45,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 1000; // Minimum delay in milliseconds
-    private static final int MAX_DELAY_MS = 3000; // Maximum delay in milliseconds
+    private static final int MIN_DELAY_MS = 1000;
+    private static final int MAX_DELAY_MS = 3000;
     private static final Random RANDOM = new Random();
 
     public AfishaParser(final City city) throws IOException {
@@ -102,7 +102,7 @@ public class AfishaParser {
                 prevFilms = keySet;
                 page++;
                 films.putAll(pageFilms);
-                addRandomDelay(); // Add delay after successful page parsing
+                addRandomDelay();
             } catch (final HttpStatusException httpEx) {
                 if (LOGGER.isWarnEnabled()) {
                     LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
@@ -134,7 +134,7 @@ public class AfishaParser {
                 pageFilms = parseFilmsPage(url);
                 page++;
                 films.putAll(pageFilms);
-                addRandomDelay(); // Add delay after successful page parsing
+                addRandomDelay();
             } catch (final HttpStatusException httpEx) {
                 if (LOGGER.isWarnEnabled()) {
                     LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
@@ -234,7 +234,7 @@ public class AfishaParser {
                 result.addAll(sessions);
                 prevCinemas = cinemas;
                 page++;
-                addRandomDelay(); // Add delay after successful page parsing
+                addRandomDelay();
             } catch (final HttpStatusException httpEx) {
                 if (LOGGER.isWarnEnabled()) {
                     LOGGER.warn("HTTP error fetching schedule page: {}", httpEx.getMessage());
