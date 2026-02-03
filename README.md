@@ -1,6 +1,6 @@
 [![Maintainability](https://qlty.sh/badges/898c8a2a-8894-4261-9f4a-0d8919ebdf1a/maintainability.svg)](https://qlty.sh/gh/GingerYouth/projects/reelsift)
 [![CI](https://github.com/GingerYouth/reelsift/actions/workflows/ci.yml/badge.svg)](https://github.com/GingerYouth/reelsift/actions/workflows/ci.yml)
-[![Lines of Code](https://tokei.rs/b1/github/GingerYouth/reelsift)](https://github.com/GingerYouth/reelsift)
+[![Lines of Code](https://sloc.xyz/github/GingerYouth/reelsift)](https://github.com/GingerYouth/reelsift)
 [![Codecov](https://codecov.io/gh/GingerYouth/reelsift/branch/master/graph/badge.svg)](https://codecov.io/gh/GingerYouth/reelsift)
 
 <img align="left" src="src/main/resources/logo.png" alt="ReelSift" width="150" hspace="20">
