@@ -96,4 +96,7 @@ jobs:
         run: mvn -B -V -Dcheckstyle.skip=true -Dpmd.skip=true test
 
       - name: Upload coverage to Coveralls
-        run: mvn -Dcheckstyle.skip -Dpmd.skip -DrepoToken=${{ secrets.COVERALLS_REPO_TOKEN }} coveralls:report
+        uses: coverallsapp/github-action@v2
+        with:
+          file: target/site/jacoco/jacoco.xml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
