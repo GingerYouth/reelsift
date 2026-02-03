@@ -124,14 +124,59 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final String formatted = Session.formatSessionLines(
             callback.sessions()
         );
-        final SendMessage reply = new SendMessage(
-            callback.chatId(), formatted
-        );
-        reply.setReplyToMessageId(
+        this.sendLongMessage(
+            callback.chatId(),
+            formatted,
             callbackQuery.getMessage().getMessageId()
         );
-        this.messageSender.sendMessage(reply);
         this.messageSender.answerCallback(callbackQuery.getId());
+    }
+
+    /**
+     * Splits and sends a long message.
+     *
+     * @param chatId The chat ID
+     * @param text The text to send
+     * @param replyToMessageId The ID of the message to reply to
+     */
+    // TODO:: Move to MessageSender?
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    private void sendLongMessage(
+        final String chatId,
+        final String text,
+        final Integer replyToMessageId
+    ) {
+        final int maxLen = 4096;
+        if (text.length() <= maxLen) {
+            final SendMessage reply = new SendMessage(chatId, text);
+            reply.setReplyToMessageId(replyToMessageId);
+            this.messageSender.sendMessage(reply);
+            return;
+        }
+        final String[] lines = text.split("\n");
+        final StringBuilder messageBuilder = new StringBuilder();
+        boolean firstPart = true;
+        for (final String line : lines) {
+            if (messageBuilder.length() + line.length() + 1 > maxLen) {
+                final SendMessage reply =
+                    new SendMessage(chatId, messageBuilder.toString());
+                if (firstPart) {
+                    reply.setReplyToMessageId(replyToMessageId);
+                    firstPart = false;
+                }
+                this.messageSender.sendMessage(reply);
+                messageBuilder.setLength(0);
+            }
+            messageBuilder.append(line).append('\n');
+        }
+        if (!messageBuilder.isEmpty()) {
+            final SendMessage reply =
+                new SendMessage(chatId, messageBuilder.toString());
+            if (firstPart) {
+                reply.setReplyToMessageId(replyToMessageId);
+            }
+            this.messageSender.sendMessage(reply);
+        }
     }
 
     /**
