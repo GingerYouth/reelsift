@@ -28,6 +28,6 @@ public class Main {
             mandatory
         );
         final List<Session> filtered = filters.filter(sessions);
-        System.out.println(Session.toString(filtered));
+        System.out.println(Session.toString(filtered, 10));
     }
 }
