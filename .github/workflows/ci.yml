@@ -95,8 +95,8 @@ jobs:
           REDIS_PORT: 6379
         run: mvn -B -V -Dcheckstyle.skip=true -Dpmd.skip=true test
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
         with:
-          files: target/site/jacoco/jacoco.xml
-          fail_ci_if_error: false
+          file: target/site/jacoco/jacoco.xml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
