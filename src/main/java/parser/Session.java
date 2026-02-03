@@ -77,7 +77,24 @@ public record Session(
         String movieName, List<String> genres, String verdict, String description, List<Session> sessions
     ) {}
 
-    public static String toString(final List<Session> sessions) {
+    /**
+     * A message for a single film, containing the formatted text
+     * and any sessions that were omitted due to the threshold.
+     */
+    public record FilmMessage(String text, List<Session> omittedSessions) {}
+
+    /**
+     * Formats sessions as a plain-text string grouped by movie.
+     * If a film has {@code sessionThreshold} or more sessions,
+     * only film info is shown without individual session lines.
+     *
+     * @param sessions List of sessions to format
+     * @param sessionThreshold Max sessions per film before they're omitted
+     * @return Plain-text formatted string
+     */
+    public static String toString(
+        final List<Session> sessions, final int sessionThreshold
+    ) {
         final StringBuilder builder = new StringBuilder(60);
 
         final Map<String, List<Session>> groupedByName = sessions.stream()
@@ -86,7 +103,6 @@ public record Session(
         final List<MovieGroup> movieGroups = groupedByName.entrySet().stream()
             .map(entry -> {
                 final Session firstSession = entry.getValue().getFirst();
-                // Sort sessions by time
                 final List<Session> sortedSessions = entry.getValue().stream()
                     .sorted(Comparator.comparing(Session::dateTime))
                     .collect(Collectors.toList());
@@ -111,27 +127,42 @@ public record Session(
                         .collect(Collectors.joining(", "))
                 )
                 .append("Verdict: ").append(group.verdict()).append('\n')
-                .append("Description: ").append(group.description).append('\n')
-                .append("Sessions: ").append('\n');
-            for (final Session session : group.sessions()) {
-                builder.append(
-                    String.format(
-                        "  %s at %s (Address: %s), Price: %d RUB, Link: %s%n",
-                        session.dateTime(),
-                        session.cinema(),
-                        session.address(),
-                        session.price(),
-                        session.link()
-                    )
-                );
+                .append("Description: ").append(group.description).append('\n');
+            if (group.sessions().size() < sessionThreshold) {
+                builder.append("Sessions: ").append('\n');
+                for (final Session session : group.sessions()) {
+                    builder.append(
+                        String.format(
+                            "  %s at %s (Address: %s), Price: %d RUB, Link: %s%n",
+                            session.dateTime(),
+                            session.cinema(),
+                            session.address(),
+                            session.price(),
+                            session.link()
+                        )
+                    );
+                }
             }
             builder.append('\n');
         }
         return builder.toString();
     }
 
-    public static List<String> toSplitStrings(final List<Session> sessions) {
-        final List<String> result = new ArrayList<>();
+    /**
+     * Formats sessions as a list of {@link FilmMessage} records, one per movie.
+     * Sessions for one film are combined into a single message.
+     * If a film has {@code sessionThreshold} or more sessions,
+     * only film info is shown without individual session lines,
+     * and the omitted sessions are included in the result.
+     *
+     * @param sessions List of sessions to format
+     * @param sessionThreshold Max sessions per film before they're omitted
+     * @return List of {@link FilmMessage} records, one per movie
+     */
+    public static List<FilmMessage> toSplitStrings(
+        final List<Session> sessions, final int sessionThreshold
+    ) {
+        final List<FilmMessage> result = new ArrayList<>();
         final StringBuilder builder = new StringBuilder(60);
 
         final Map<String, List<Session>> groupedByName = sessions.stream()
@@ -140,7 +171,6 @@ public record Session(
         final List<MovieGroup> movieGroups = groupedByName.entrySet().stream()
             .map(entry -> {
                 final Session firstSession = entry.getValue().getFirst();
-                // Sort sessions by time
                 final List<Session> sortedSessions = entry.getValue().stream()
                     .sorted(Comparator.comparing(Session::dateTime))
                     .collect(Collectors.toList());
@@ -154,8 +184,6 @@ public record Session(
                 String.CASE_INSENSITIVE_ORDER
             ))
             .toList();
-        result.add(builder.toString());
-        builder.setLength(0);
 
         for (final MovieGroup group : movieGroups) {
             builder.append("<b>Фильм:</b> ").append(group.movieName()).append('\n')
@@ -167,25 +195,50 @@ public record Session(
                         .collect(Collectors.joining(", "))
                 )
                 .append("\n<b>О чём:</b> ").append(group.verdict()).append('\n')
-                .append("<b>Описание:</b> ").append(group.description).append('\n')
-                .append("<b>Сеансы:</b> ").append('\n');
-            result.add(builder.toString());
-            builder.setLength(0);
-
-            for (final Session session : group.sessions()) {
-                builder.append(
-                    String.format(
-                        "  %s в %s (Адрес: <i>%s</i>), Цена: %d RUB",
-                        session.dateTime(),
-                        session.cinema(),
-                        session.address(),
-                        session.price()
-                    )
-                );
-                result.add(builder.toString());
-                builder.setLength(0);
+                .append("<b>Описание:</b> ").append(group.description).append('\n');
+            if (group.sessions().size() < sessionThreshold) {
+                builder.append("<b>Сеансы:</b> ").append('\n');
+                for (final Session session : group.sessions()) {
+                    builder.append(
+                        String.format(
+                            "  %s в %s (Адрес: <i>%s</i>), Цена: %d RUB\n",
+                            session.dateTime(),
+                            session.cinema(),
+                            session.address(),
+                            session.price()
+                        )
+                    );
+                }
+                result.add(new FilmMessage(builder.toString(), Collections.emptyList()));
+            } else {
+                result.add(new FilmMessage(builder.toString(), group.sessions()));
             }
+            builder.setLength(0);
         }
         return result;
+    }
+
+    /**
+     * Formats a list of sessions as HTML session lines.
+     * Each line contains the date/time, cinema name, address, and price.
+     *
+     * @param sessions List of sessions to format
+     * @return HTML-formatted string with session details
+     */
+    public static String formatSessionLines(final List<Session> sessions) {
+        final StringBuilder builder = new StringBuilder(60);
+        builder.append("<b>Сеансы:</b>\n");
+        for (final Session session : sessions) {
+            builder.append(
+                String.format(
+                    "  %s в %s (Адрес: <i>%s</i>), Цена: %d RUB\n",
+                    session.dateTime(),
+                    session.cinema(),
+                    session.address(),
+                    session.price()
+                )
+            );
+        }
+        return builder.toString();
     }
 }
