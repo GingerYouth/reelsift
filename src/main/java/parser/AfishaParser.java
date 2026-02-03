@@ -67,7 +67,9 @@ public class AfishaParser {
                 LOGGER.debug("Initial cookies: {}", cookies);
             }
         } catch (IOException e) {
-            LOGGER.error("Failed to get initial cookies: {}", e.getMessage());
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to get initial cookies: {}", e.getMessage());
+            }
             throw e;
         }
         return cookies;
@@ -102,11 +104,15 @@ public class AfishaParser {
                 films.putAll(pageFilms);
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                }
                 break;
             }
         } while (!pageFilms.isEmpty());
-        LOGGER.info("Parsed {} films for today.", films.size());
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Parsed {} films for today.", films.size());
+        }
         return films;
     }
 
@@ -130,11 +136,15 @@ public class AfishaParser {
                 films.putAll(pageFilms);
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
+                }
                 break;
             }
         } while (!pageFilms.isEmpty());
-        LOGGER.info("Parsed {} films for dates {}.", films.size(), dates);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Parsed {} films for dates {}.", films.size(), dates);
+        }
         return films;
     }
 
@@ -200,6 +210,7 @@ public class AfishaParser {
      * @param date The date in dd-MM-yyyy format
      * @return The list of {@link Session}
      */
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
     public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
         int page = 1;
@@ -225,14 +236,18 @@ public class AfishaParser {
                 page++;
                 addRandomDelay(); // Add delay after successful page parsing
             } catch (final HttpStatusException httpEx) {
-                LOGGER.warn("HTTP error fetching schedule page: {}", httpEx.getMessage());
+                if (LOGGER.isWarnEnabled()) {
+                    LOGGER.warn("HTTP error fetching schedule page: {}", httpEx.getMessage());
+                }
                 break;
             } catch (final JSONException | IOException e) {
                 LOGGER.error("Error parsing schedule for link {} and date {}", link, date, e);
                 throw new IOException("Failed to parse schedule", e);
             }
         } while (!jsonPage.isEmpty());
-        LOGGER.info("Parsed {} sessions for link {} and date {}.", result.size(), link, date);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Parsed {} sessions for link {} and date {}.", result.size(), link, date);
+        }
         return result;
     }
 
@@ -255,9 +270,7 @@ public class AfishaParser {
         try {
             final long delay = RANDOM.nextInt(MAX_DELAY_MS - MIN_DELAY_MS) + MIN_DELAY_MS;
             if (LOGGER.isDebugEnabled()) {
-                if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Adding a delay of {}ms before the next request.", delay);
-            }
             }
             Thread.sleep(delay);
         } catch (InterruptedException e) {
