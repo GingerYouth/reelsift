@@ -5,8 +5,11 @@ import bots.enums.EditCommand;
 import bots.enums.TriggerCommand;
 import bots.services.KeyboardService;
 import bots.services.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageHandler.class);
     private final UserService userService;
     private final KeyboardService keyboardService;
     private final TriggerCommandHandler triggerHandler;
@@ -31,6 +34,7 @@ public class MessageHandler {
     }
 
     public void handleNewUser(final long chatId, final String chatIdString) {
+        LOGGER.info("New user with chat ID: {}", chatId);
         this.userService.setUserCity(chatId, parser.City.MOSCOW);
         this.keyboardService.showMainKeyboard(
             chatIdString,
@@ -42,9 +46,11 @@ public class MessageHandler {
 
     public void handleCityChange(final long chatId, final String chatIdString, final String text) {
         if ("спб".equalsIgnoreCase(text)) {
+            LOGGER.info("User {} changed city to SPB", chatId);
             userService.setUserCity(chatId, parser.City.SPB);
             keyboardService.showMainKeyboard(chatIdString, "Город изменен на Санкт-Петербург.");
         } else if ("мск".equalsIgnoreCase(text)) {
+            LOGGER.info("User {} changed city to MOSCOW", chatId);
             userService.setUserCity(chatId, parser.City.MOSCOW);
             keyboardService.showMainKeyboard(chatIdString, "Город изменен на Москва.");
         } else {
@@ -53,6 +59,7 @@ public class MessageHandler {
     }
 
     public void processCommand(final long chatId, final String chatIdString, final String text) {
+        LOGGER.info("Processing command '{}' for user {}", text, chatId);
         TriggerCommand.getEnumByString(text).ifPresentOrElse(
             triggerCommand -> this.triggerHandler.handle(chatId, chatIdString, triggerCommand),
             () -> EditCommand.getEnumByString(text).ifPresentOrElse(
