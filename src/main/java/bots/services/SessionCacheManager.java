@@ -4,6 +4,7 @@ import cache.RedisCache;
 import filters.DateInterval;
 import parser.AfishaParser;
 import parser.City;
+import parser.MovieThumbnail;
 import parser.Session;
 import utils.Utils;
 
@@ -13,7 +14,6 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /** Manages session caching and retrieval from Redis. */
 public class SessionCacheManager {
@@ -70,15 +70,17 @@ public class SessionCacheManager {
         final List<LocalDate> missingDates,
         final City city
     ) throws IOException {
-        final Map<String, String> films = parser.parseFilmsInDates(dateRange);
+        final List<MovieThumbnail> thumbnails = parser.parseFilmsInDates(dateRange);
         final String[] rangeDates = dateRange.split("_");
         final LocalDate startDate = parseDateFromRange(rangeDates[0]);
         final LocalDate endDate = parseDateFromRange(rangeDates[1]);
 
-        for (final Map.Entry<String, String> entry : films.entrySet()) {
+        for (final MovieThumbnail thumbnail : thumbnails) {
             for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
                 if (missingDates.contains(date)) {
-                    cacheSessionsForDate(parser, entry.getValue(), date, city);
+                    cacheSessionsForDate(
+                        parser, thumbnail.sessionsLink(), thumbnail.imageLink(), date, city
+                    );
                 }
             }
         }
@@ -87,6 +89,7 @@ public class SessionCacheManager {
     private void cacheSessionsForDate(
         final AfishaParser parser,
         final String filmUrl,
+        final String imageUrl,
         final LocalDate date,
         final City city
     ) throws IOException {
@@ -95,6 +98,7 @@ public class SessionCacheManager {
             Utils.removeDateFromUrlEnd(filmUrl),
             formattedDate
         );
+        sessions.forEach(s -> s.setImageUrl(imageUrl));
         this.redisCache.cacheSessions(sessions, city);
     }
 

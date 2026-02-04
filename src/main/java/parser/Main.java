@@ -6,17 +6,16 @@ import filters.MandatoryGenres;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /** parser.Main class. */
 @SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})
 public class Main {
     public static void main(final String[] args) throws Exception {
         final AfishaParser parser = new AfishaParser(City.MOSCOW);
-        final Map<String, String> films = parser.parseTodayFilms();
+        final List<MovieThumbnail> thumbnails = parser.parseTodayFilms();
         final List<Session> sessions = new ArrayList<>();
-        for (final Map.Entry<String, String> entry : films.entrySet()) {
-            sessions.addAll(parser.parseSchedule(entry.getValue()));
+        for (final MovieThumbnail thumbnail : thumbnails) {
+            sessions.addAll(parser.parseSchedule(thumbnail.sessionsLink()));
         }
         //final TimeFilter timeFilter = new TimeFilter("15:50", "23:59");
         final ExcludedGenres excluded = new ExcludedGenres(List.of("Комедия", "Ужасы"));

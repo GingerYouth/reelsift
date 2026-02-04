@@ -7,6 +7,7 @@ import bots.services.KeyboardService;
 import bots.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import parser.City;
 
 public class MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageHandler.class);
@@ -35,7 +36,7 @@ public class MessageHandler {
 
     public void handleNewUser(final long chatId, final String chatIdString) {
         LOGGER.info("New user with chat ID: {}", chatId);
-        this.userService.setUserCity(chatId, parser.City.MOSCOW);
+        this.userService.setUserCity(chatId, City.MOSCOW);
         this.keyboardService.showMainKeyboard(
             chatIdString,
             "👋 Привет! Добро пожаловать в SiftBot.\n"
@@ -47,12 +48,16 @@ public class MessageHandler {
     public void handleCityChange(final long chatId, final String chatIdString, final String text) {
         if ("спб".equalsIgnoreCase(text)) {
             LOGGER.info("User {} changed city to SPB", chatId);
-            userService.setUserCity(chatId, parser.City.SPB);
+            userService.setUserCity(chatId, City.SPB);
             keyboardService.showMainKeyboard(chatIdString, "Город изменен на Санкт-Петербург.");
         } else if ("мск".equalsIgnoreCase(text)) {
             LOGGER.info("User {} changed city to MOSCOW", chatId);
-            userService.setUserCity(chatId, parser.City.MOSCOW);
+            userService.setUserCity(chatId, City.MOSCOW);
             keyboardService.showMainKeyboard(chatIdString, "Город изменен на Москва.");
+        } else if ("балашиха".equalsIgnoreCase(text)) {
+            LOGGER.info("User {} changed city to BALASHIHA", chatId);
+            userService.setUserCity(chatId, City.BALASHIHA);
+            keyboardService.showMainKeyboard(chatIdString, "Город изменен на Балашиха.");
         } else {
             keyboardService.showMainKeyboard(chatIdString, "Выберите действие:");
         }
