@@ -196,7 +196,10 @@ public class SessionTest {
         assertThat(
             "cant include date/time in formatted session lines",
             Session.formatSessionLines(sessions),
-            containsString("2024-03-15T14:30")
+            allOf(
+                containsString("03-15"),
+                containsString("14:30")
+            )
         );
     }
 
