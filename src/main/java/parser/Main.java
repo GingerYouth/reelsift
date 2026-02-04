@@ -6,7 +6,6 @@ import filters.MandatoryGenres;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /** parser.Main class. */
 @SuppressWarnings({"PMD.ShortClassName", "PMD.SignatureDeclareThrowsException"})

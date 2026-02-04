@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 /** Afisha.ru parser. */
 public class AfishaParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(AfishaParser.class);
+    private static final String DATA_TEST_ATTR = "data-test";
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
     private static final String TODAY = "na-segodnya";
@@ -158,7 +159,7 @@ public class AfishaParser {
      * @return The list of {@link MovieThumbnail}.
      */
     private static List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
-        List<MovieThumbnail> thumbnails = new ArrayList<>();
+        final List<MovieThumbnail> thumbnails = new ArrayList<>();
         final Document document = Jsoup.connect(link).userAgent(USER_AGENT).get();
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
 
@@ -177,10 +178,10 @@ public class AfishaParser {
 
     private static Optional<Map.Entry<String, String>> extractFilmFromContainer(final Element container) {
         List<Element> linkElements = container.getElementsByAttributeValue(
-            "data-test", "LINK LINK-BUTTON TICKET-BUTTON"
+            DATA_TEST_ATTR, "LINK LINK-BUTTON TICKET-BUTTON"
         );
         if (linkElements.isEmpty()) {
-            linkElements = container.getElementsByAttributeValue("data-test", "LINK LINK-BUTTON");
+            linkElements = container.getElementsByAttributeValue(DATA_TEST_ATTR, "LINK LINK-BUTTON");
         }
 
         if (!linkElements.isEmpty()) {
@@ -190,7 +191,7 @@ public class AfishaParser {
                 final String href = matcher.group(1);
                 if (href.contains("/schedule_cinema_product/")) {
                     return Optional.of(Map.entry(
-                        container.getElementsByAttributeValue("data-test", "LINK ITEM-NAME ITEM-URL").text(),
+                        container.getElementsByAttributeValue(DATA_TEST_ATTR, "LINK ITEM-NAME ITEM-URL").text(),
                         BASE_LINK + href
                     ));
                 } else {
@@ -207,7 +208,7 @@ public class AfishaParser {
 
     private static String extractImageUrl(final Element container) {
         String result = "";
-        final Elements imgElements = container.getElementsByAttributeValue("data-test", "IMAGE ITEM-IMAGE");
+        final List<Element> imgElements = container.getElementsByAttributeValue(DATA_TEST_ATTR, "IMAGE ITEM-IMAGE");
         if (!imgElements.isEmpty()) {
             final String src = imgElements.getFirst().attr("src");
             if (!src.isEmpty()) {

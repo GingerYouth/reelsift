@@ -2,7 +2,6 @@ package bots.services;
 
 import cache.RedisCache;
 import filters.DateInterval;
-import java.util.Optional;
 import parser.AfishaParser;
 import parser.City;
 import parser.MovieThumbnail;
@@ -15,7 +14,6 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /** Manages session caching and retrieval from Redis. */
 public class SessionCacheManager {

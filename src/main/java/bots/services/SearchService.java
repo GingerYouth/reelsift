@@ -27,6 +27,7 @@ public final class SearchService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
     private static final int MAX_CAPTION_LENGTH = 1024;
     private static final String TRUNCATION_SUFFIX = " ...";
+    private static final int SESSION_THRESHOLD = 10;
 
     private final SessionCacheManager cacheManager;
     private final FilterBuilder filterBuilder;
@@ -89,7 +90,7 @@ public final class SearchService {
 
         for (
             final Session.FilmMessage film
-                : Session.toSplitStrings(filtered, 10)
+                : Session.toSplitStrings(filtered, SESSION_THRESHOLD)
         ) {
             final String caption = truncateCaption(film.text());
             sendWithInlineButton(chatIdString, film, caption);
@@ -117,8 +118,10 @@ public final class SearchService {
         final InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup(List.of(row));
 
         if (film.imageUrl() != null && !film.imageUrl().isEmpty()) {
-            LOGGER.info("Preparing to send photo for chat {} with URL: {} and caption length: {}",
-                chatIdString, film.imageUrl(), caption.length());
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Preparing to send photo for chat {} with URL: {} and caption length: {}",
+                    chatIdString, film.imageUrl(), caption.length());
+            }
             final SendPhoto sendPhoto = SendPhoto.builder()
                 .chatId(chatIdString)
                 .photo(new InputFile(film.imageUrl()))
@@ -128,16 +131,20 @@ public final class SearchService {
                 .build();
             try {
                 this.messageSender.getTelegramClient().execute(sendPhoto);
-            } catch (Exception e) {
-                LOGGER.error("Failed to send photo with inline button for URL {}: {}", film.imageUrl(), e.getMessage(), e);
+            } catch (final TelegramApiException e) {
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Failed to send photo with inline button for URL {}", film.imageUrl(), e);
+                }
                 // Fallback to sending just the message with button if photo sending fails
                 final SendMessage message = new SendMessage(chatIdString, caption);
                 message.setReplyMarkup(keyboardMarkup);
                 this.messageSender.sendAndGetId(message);
             }
         } else {
-            LOGGER.info("Preparing to send text message for chat {} with caption length: {}",
-                chatIdString, caption.length());
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Preparing to send text message for chat {} with caption length: {}",
+                    chatIdString, caption.length());
+            }
             final SendMessage message = new SendMessage(
                 chatIdString, caption
             );

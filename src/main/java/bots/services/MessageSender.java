@@ -16,7 +16,6 @@ import utils.PropertiesLoader;
 /**
  * Sends Telegram messages and handles callback query responses.
  */
-@SuppressWarnings("PMD.AvoidPrintStackTrace")
 public final class MessageSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageSender.class);
@@ -58,11 +57,13 @@ public final class MessageSender {
         final SendMessage sendMessage = new SendMessage(chatId, message);
         sendMessage.setParseMode(HTML);
         try {
-            if (!sendMessage.getText().isEmpty()) {
+            if (sendMessage.getText() != null && !sendMessage.getText().isEmpty()) {
                 this.telegramClient.execute(sendMessage);
             }
-        } catch (TelegramApiException tgApiEx) {
-            tgApiEx.printStackTrace();
+        } catch (final TelegramApiException tgApiEx) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to send message: {}", tgApiEx.getMessage());
+            }
         }
     }
 
@@ -74,26 +75,30 @@ public final class MessageSender {
      * @param caption The caption for the image (can be null or empty)
      */
     public void sendPhoto(final String chatId, final String imageUrl, final String caption) {
-        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+        if (imageUrl == null || imageUrl.isBlank()) {
             // If no image URL, fall back to sending just the message
             sendMessage(chatId, caption);
             return;
         }
 
-        LOGGER.info("Attempting to send photo with URL: {}", imageUrl);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Attempting to send photo with URL: {}", imageUrl);
+        }
 
         final SendPhoto.SendPhotoBuilder photoBuilder = SendPhoto.builder()
             .chatId(chatId)
             .photo(new InputFile(imageUrl));
 
-        if (caption != null && !caption.trim().isEmpty()) {
+        if (caption != null && !caption.isBlank()) {
             photoBuilder.caption(caption).parseMode(HTML);
         }
 
         try {
             this.telegramClient.execute(photoBuilder.build());
-        } catch (TelegramApiException tgApiEx) {
-            LOGGER.error("Failed to send photo for URL {}: {}", imageUrl, tgApiEx.getMessage());
+        } catch (final TelegramApiException tgApiEx) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to send photo for URL {}: {}", imageUrl, tgApiEx.getMessage());
+            }
             // Fallback to sending just the message if photo sending fails
             sendMessage(chatId, caption);
         }
@@ -108,8 +113,10 @@ public final class MessageSender {
         message.setParseMode(HTML);
         try {
             this.telegramClient.execute(message);
-        } catch (TelegramApiException tgApiEx) {
-            tgApiEx.printStackTrace();
+        } catch (final TelegramApiException tgApiEx) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to send pre-built message: {}", tgApiEx.getMessage());
+            }
         }
     }
 
@@ -124,8 +131,10 @@ public final class MessageSender {
         try {
             final Message sent = this.telegramClient.execute(message);
             return Optional.of(sent.getMessageId());
-        } catch (TelegramApiException tgApiEx) {
-            tgApiEx.printStackTrace();
+        } catch (final TelegramApiException tgApiEx) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to send message and get ID: {}", tgApiEx.getMessage());
+            }
             return Optional.empty();
         }
     }
@@ -139,8 +148,10 @@ public final class MessageSender {
         final AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackQueryId);
         try {
             this.telegramClient.execute(answer);
-        } catch (TelegramApiException tgApiEx) {
-            tgApiEx.printStackTrace();
+        } catch (final TelegramApiException tgApiEx) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Failed to answer callback query {}: {}", callbackQueryId, tgApiEx.getMessage());
+            }
         }
     }
 }

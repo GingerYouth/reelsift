@@ -36,7 +36,7 @@ public class MessageHandler {
 
     public void handleNewUser(final long chatId, final String chatIdString) {
         LOGGER.info("New user with chat ID: {}", chatId);
-        this.userService.setUserCity(chatId, parser.City.MOSCOW);
+        this.userService.setUserCity(chatId, City.MOSCOW);
         this.keyboardService.showMainKeyboard(
             chatIdString,
             "👋 Привет! Добро пожаловать в SiftBot.\n"

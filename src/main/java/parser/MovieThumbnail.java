@@ -1,7 +1,6 @@
 package parser;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Movie thumbnail DTO.
@@ -35,10 +34,14 @@ public final class MovieThumbnail {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (MovieThumbnail) obj;
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        final MovieThumbnail that = (MovieThumbnail) obj;
         return Objects.equals(this.name, that.name) &&
             Objects.equals(this.sessionsLink, that.sessionsLink) &&
             Objects.equals(this.imageLink, that.imageLink);
