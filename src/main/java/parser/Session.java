@@ -1,22 +1,69 @@
 package parser;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Session DTO. */
-@SuppressWarnings({"PMD.ConsecutiveLiteralAppends"})
-public record Session(
-    LocalDateTime dateTime, String name, String description, String verdict,
-    List<String> genres, String cinema, String address, int price, String link,
-    boolean russianSubtitlesSession, String imageUrl) {
+/**
+ * Session DTO.
+ */
+@SuppressWarnings({"PMD.ConsecutiveLiteralAppends", "PMD.TooManyMethods"})
+public final class Session {
+    private final LocalDateTime dateTime;
+    private final String name;
+    private final String description;
+    private final String verdict;
+    private final List<String> genres;
+    private final String cinema;
+    private final String address;
+    private final int price;
+    private final String link;
+    private final boolean russianSubtitlesSession;
+    private String imageUrl;
+
+    /** Constructor. */
+    @SuppressWarnings("PMD.ExcessiveParameterList")
+    public Session(
+        final LocalDateTime dateTime, final String name,
+        final String description, final String verdict,
+        final List<String> genres, final String cinema,
+        final String address, final int price,
+        final String link, final boolean russianSubtitlesSession,
+        final String imageUrl
+    ) {
+        this.dateTime = dateTime;
+        this.name = name;
+        this.description = description;
+        this.verdict = verdict;
+        this.genres = genres;
+        this.cinema = cinema;
+        this.address = address;
+        this.price = price;
+        this.link = link;
+        this.russianSubtitlesSession = russianSubtitlesSession;
+        this.imageUrl = imageUrl;
+    }
+
+    /** Constructor. */
+    public Session(
+        final LocalDateTime dateTime, final String name,
+        final String description, final String verdict,
+        final List<String> genres, final String cinema,
+        final String address, final int price,
+        final String link, final boolean withSubs
+    ) {
+        this(
+            dateTime, name, description, verdict, genres,
+            cinema, address, price, link, withSubs, ""
+        );
+    }
+
+    public void setImageUrl(final String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 
     public static String toJson(final List<Session> sessions) {
         final JSONArray jsonArray = new JSONArray();
@@ -243,4 +290,92 @@ public record Session(
         }
         return builder.toString();
     }
+
+    public LocalDateTime dateTime() {
+        return dateTime;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    public String verdict() {
+        return verdict;
+    }
+
+    public List<String> genres() {
+        return genres;
+    }
+
+    public String cinema() {
+        return cinema;
+    }
+
+    public String address() {
+        return address;
+    }
+
+    public int price() {
+        return price;
+    }
+
+    public String link() {
+        return link;
+    }
+
+    public boolean russianSubtitlesSession() {
+        return russianSubtitlesSession;
+    }
+
+    public String imageUrl() {
+        return this.imageUrl;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        final Session that = (Session) obj;
+        return Objects.equals(this.dateTime, that.dateTime) &&
+            Objects.equals(this.name, that.name) &&
+            Objects.equals(this.description, that.description) &&
+            Objects.equals(this.verdict, that.verdict) &&
+            Objects.equals(this.genres, that.genres) &&
+            Objects.equals(this.cinema, that.cinema) &&
+            Objects.equals(this.address, that.address) &&
+            this.price == that.price &&
+            Objects.equals(this.link, that.link) &&
+            this.russianSubtitlesSession == that.russianSubtitlesSession &&
+            Objects.equals(this.imageUrl, that.imageUrl);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dateTime, name, description, verdict, genres, cinema, address, price, link, russianSubtitlesSession, imageUrl);
+    }
+
+    @Override
+    public String toString() {
+        return "Session[" +
+                "dateTime=" + dateTime + ", " +
+                "name=" + name + ", " +
+                "description=" + description + ", " +
+                "verdict=" + verdict + ", " +
+                "genres=" + genres + ", " +
+                "cinema=" + cinema + ", " +
+                "address=" + address + ", " +
+                "price=" + price + ", " +
+                "link=" + link + ", " +
+                "russianSubtitlesSession=" + russianSubtitlesSession + ", " +
+                "imageUrl=" + imageUrl + ']';
+    }
+
 }
