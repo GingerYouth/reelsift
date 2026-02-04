@@ -1,21 +1,14 @@
 package parser;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
-import org.junit.Test;
-
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
-
+import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 /**
@@ -61,7 +54,7 @@ public class SessionTest {
 
     @Test
     public void testFromJsonArray() {
-        String json = "[{\"dateTime\":\"2024-01-01T10:30\",\"name\":\"Test Movie\",\"description\":\"Desc\",\"verdict\":\"Verdict\",\"genres\":[\"Action\",\"Drama\"],\"cinema\":\"Cinema\",\"address\":\"Address\",\"price\":500,\"link\":\"link\",\"russianSubtitlesSession\":true}]";
+        String json = "[{\"dateTime\":\"2024-01-01T10:30\",\"name\":\"Test Movie\",\"description\":\"Desc\",\"verdict\":\"Verdict\",\"genres\":[\"Action\",\"Drama\"],\"cinema\":\"Cinema\",\"address\":\"Address\",\"price\":500,\"link\":\"link\",\"russianSubtitlesSession\":true,\"imageUrl\":\"\"}]";
 
         List<Session> sessions = Session.fromJsonArray(json);
 
@@ -84,7 +77,7 @@ public class SessionTest {
 
     @Test
     public void testFromJsonArraySingleObject() {
-        String json = "{\"dateTime\":\"2024-01-01T10:30\",\"name\":\"Test Movie\",\"description\":\"Desc\",\"verdict\":\"Verdict\",\"genres\":[\"Action\",\"Drama\"],\"cinema\":\"Cinema\",\"address\":\"Address\",\"price\":500,\"link\":\"link\"}";
+        String json = "{\"dateTime\":\"2024-01-01T10:30\",\"name\":\"Test Movie\",\"description\":\"Desc\",\"verdict\":\"Verdict\",\"genres\":[\"Action\",\"Drama\"],\"cinema\":\"Cinema\",\"address\":\"Address\",\"price\":500,\"link\":\"link\",\"imageUrl\":\"\"}";
 
         List<Session> sessions = Session.fromJsonArray(json);
 
@@ -122,7 +115,7 @@ public class SessionTest {
         Session session = new Session(dateTime, "Movie", "Desc", "Verdict",
                                     genres, "Cinema", "Addr", 500, "link", false);
 
-        Session.MovieGroup group = new Session.MovieGroup("Movie", genres, "Verdict", "Desc", List.of(session));
+        Session.MovieGroup group = new Session.MovieGroup("Movie", genres, "Verdict", "Desc", List.of(session), "");
 
         assertEquals("Movie", group.movieName());
         assertEquals(genres, group.genres());
@@ -141,7 +134,7 @@ public class SessionTest {
     }
 
     @Test
-    public void toSplitStringsReturnsEmptyOmittedSessionsBelowThreshold() {
+    public void toSplitStringsAlwaysReturnsOmittedSessions() {
         final String movieName = "Film " + UUID.randomUUID();
         final List<Session> sessions = IntStream.range(0, 3)
             .mapToObj(i -> new Session(
@@ -151,9 +144,9 @@ public class SessionTest {
             ))
             .toList();
         assertThat(
-            "cant return empty omitted sessions below threshold",
+            "should always return all sessions in the omittedSessions list",
             Session.toSplitStrings(sessions, 10).get(0).omittedSessions(),
-            is(empty())
+            hasSize(3)
         );
     }
 
@@ -251,7 +244,7 @@ public class SessionTest {
     }
 
     @Test
-    public void toSplitStringsCombinedMessageContainsSessionDetails() {
+    public void toSplitStringsCombinedMessageExcludesSessionDetails() {
         final String cinemaName = "Cinema " + UUID.randomUUID();
         final List<Session> sessions = List.of(
             new Session(
@@ -261,9 +254,9 @@ public class SessionTest {
             )
         );
         assertThat(
-            "cant include session details in combined message",
+            "should not include session details in the main message text",
             Session.toSplitStrings(sessions, 10).get(0).text(),
-            containsString(cinemaName)
+            not(containsString(cinemaName))
         );
     }
 
@@ -323,7 +316,7 @@ public class SessionTest {
     }
 
     @Test
-    public void toSplitStringsShowsSessionsJustBelowThreshold() {
+    public void toSplitStringsAlwaysHidesSessions() {
         final String cinemaName = "Cinema " + UUID.randomUUID();
         final List<Session> sessions = IntStream.range(0, 9)
             .mapToObj(i -> new Session(
@@ -333,9 +326,9 @@ public class SessionTest {
             ))
             .toList();
         assertThat(
-            "cant show sessions when count is below threshold",
+            "should always hide session details from the main text",
             Session.toSplitStrings(sessions, 10).get(0).text(),
-            containsString(cinemaName)
+            not(containsString(cinemaName))
         );
     }
 

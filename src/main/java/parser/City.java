@@ -3,12 +3,14 @@ package parser;
 /** City enum. */
 public enum City {
     MOSCOW(),
-    SPB();
+    SPB(),
+    BALASHIHA();
 
     public String asCode() {
         return switch (this) {
             case MOSCOW -> "msk";
             case SPB -> "spb";
+            case BALASHIHA -> "balashiha";
         };
     }
 

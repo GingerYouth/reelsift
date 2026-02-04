@@ -35,6 +35,7 @@
         <exclude name="AvoidLiteralsInIfCondition"/>
         <exclude name="BeanMembersShouldSerialize"/>
         <exclude name="DetachedTestCase"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
     </rule>
 
     <rule ref="category/java/multithreading.xml">

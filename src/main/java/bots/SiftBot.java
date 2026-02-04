@@ -86,6 +86,7 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             if (
                 "спб".equalsIgnoreCase(text)
                     || "мск".equalsIgnoreCase(text)
+                        || "балашиха".equalsIgnoreCase(text)
             ) {
                 this.messageHandler.handleCityChange(
                     chatId, chatIdString, text

@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,6 +19,7 @@ import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,11 +78,13 @@ public class AfishaParser {
      * Parse today films.
      *
      * @return The map of film names to the link to the sessions
+     * @deprecated Use {@link AfishaParser#parseFilmsInDates(String)} instead
      */
-    public Map<String, String> parseTodayFilms() throws IOException {
-        final Map<String, String> films = new TreeMap<>();
-        Map<String, String> pageFilms;
-        Set<String> prevFilms = new HashSet<>();
+    @Deprecated
+    public List<MovieThumbnail> parseTodayFilms() throws IOException {
+        final List<MovieThumbnail> films = new ArrayList<>();
+        List<MovieThumbnail> pageFilms;
+        Set<String> prevNames = new HashSet<>();
         int page = 0;
         do {
             try {
@@ -92,16 +93,19 @@ public class AfishaParser {
                     LOGGER.debug("Parsing films from: {}", url);
                 }
                 pageFilms = parseFilmsPage(url);
-                final Set<String> keySet = pageFilms.keySet();
-                if (prevFilms.equals(keySet)) {
+                final Set<String> names = pageFilms
+                    .stream()
+                    .map(MovieThumbnail::name)
+                    .collect(Collectors.toSet());
+                if (prevNames.equals(names)) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Found duplicate film page, stopping parse.");
                     }
                     break;
                 }
-                prevFilms = keySet;
+                prevNames = names;
                 page++;
-                films.putAll(pageFilms);
+                films.addAll(pageFilms);
                 addRandomDelay();
             } catch (final HttpStatusException httpEx) {
                 if (LOGGER.isWarnEnabled()) {
@@ -121,9 +125,9 @@ public class AfishaParser {
      *
      * @return The map of film names to the link to the sessions
      */
-    public Map<String, String> parseFilmsInDates(final String dates) throws IOException {
-        final Map<String, String> films = new TreeMap<>();
-        Map<String, String> pageFilms;
+    public List<MovieThumbnail> parseFilmsInDates(final String dates) throws IOException {
+        final List<MovieThumbnail> films = new ArrayList<>();
+        List<MovieThumbnail> pageFilms;
         int page = 0;
         do {
             try {
@@ -133,7 +137,7 @@ public class AfishaParser {
                 }
                 pageFilms = parseFilmsPage(url);
                 page++;
-                films.putAll(pageFilms);
+                films.addAll(pageFilms);
                 addRandomDelay();
             } catch (final HttpStatusException httpEx) {
                 if (LOGGER.isWarnEnabled()) {
@@ -151,16 +155,24 @@ public class AfishaParser {
     /**
      * Parse today films page.
      *
-     * @return The map of film names to the link to the sessions
+     * @return The list of {@link MovieThumbnail}.
      */
-    private static Map<String, String> parseFilmsPage(final String link) throws IOException {
-        final Map<String, String> schedules = new HashMap<>();
+    private static List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
+        List<MovieThumbnail> thumbnails = new ArrayList<>();
         final Document document = Jsoup.connect(link).userAgent(USER_AGENT).get();
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
+
         for (final Element container : filmContainers) {
-            extractFilmFromContainer(container).ifPresent(film -> schedules.put(film.getKey(), film.getValue()));
+            extractFilmFromContainer(container)
+                .ifPresent(film -> thumbnails.add(
+                    new MovieThumbnail(
+                        film.getKey(),
+                        film.getValue(),
+                        extractImageUrl(container)
+                    )
+                ));
         }
-        return schedules;
+        return thumbnails;
     }
 
     private static Optional<Map.Entry<String, String>> extractFilmFromContainer(final Element container) {
@@ -191,6 +203,18 @@ public class AfishaParser {
             }
         }
         return Optional.empty();
+    }
+
+    private static String extractImageUrl(final Element container) {
+        String result = "";
+        final Elements imgElements = container.getElementsByAttributeValue("data-test", "IMAGE ITEM-IMAGE");
+        if (!imgElements.isEmpty()) {
+            final String src = imgElements.getFirst().attr("src");
+            if (!src.isEmpty()) {
+                result = src;
+            }
+        }
+        return result;
     }
 
     /**
@@ -261,7 +285,7 @@ public class AfishaParser {
             .header("Sec-Fetch-Mode", "cors")
             .header("Sec-Fetch-Site", "same-origin")
             .userAgent(USER_AGENT)
-            .timeout(15_000)
+            .timeout(30_000)
             .execute()
             .body();
     }

@@ -1,20 +1,16 @@
 package bots.services;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-
+import filters.Filters;
+import filters.Genre;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
-import filters.Filters;
-import filters.Genre;
 import org.junit.jupiter.api.Test;
 import parser.Session;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * Unit tests for {@link FilterBuilder}.

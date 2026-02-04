@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,11 +32,19 @@ public final class SessionJsonParser {
 
         final List<String> genres = extractGenres(info);
         final JSONObject distributorInfo = extractDistributorInfo(info);
+        
+        final JSONObject scheduleWidget = root.optJSONObject("ScheduleWidget");
+        if (scheduleWidget == null) {
+            return Collections.emptyList();
+        }
 
-        final JSONArray items = root
-            .getJSONObject("ScheduleWidget")
-            .getJSONObject("ScheduleList")
-            .getJSONArray("Items");
+        final JSONArray items = scheduleWidget
+            .optJSONObject("ScheduleList")
+            .optJSONArray("Items");
+
+        if (items == null) {
+            return Collections.emptyList();
+        }
 
         for (int i = 0; i < items.length(); i++) {
             final JSONObject item = items.getJSONObject(i);
@@ -96,7 +105,8 @@ public final class SessionJsonParser {
             place.get("Address").toString(),
             "null".equals(price) ? -1 : Integer.parseInt(price),
             "link",
-            "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString())
+            "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString()),
+            ""
         );
     }
 }
