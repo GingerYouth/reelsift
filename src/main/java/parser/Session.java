@@ -1,7 +1,15 @@
 package parser;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.json.JSONArray;
@@ -269,6 +277,7 @@ public final class Session {
 
     /**
      * Formats a list of sessions as HTML session lines.
+     * Sessions are grouped by date and then by cinema for better readability.
      * Each line contains the date/time, cinema name, address, and price.
      *
      * @param sessions List of sessions to format
@@ -276,17 +285,46 @@ public final class Session {
      */
     public static String formatSessionLines(final List<Session> sessions) {
         final StringBuilder builder = new StringBuilder(60);
-        builder.append("<b>Сеансы:</b>\n");
-        for (final Session session : sessions) {
-            builder.append(
-                    String.format(
-                            "  %s в %s (Адрес: <i>%s</i>), Цена: %d RUB\n",
-                            session.dateTime(),
-                            session.cinema(),
-                            session.address(),
-                            session.price()
-                    )
+        builder.append("<b>Сеансы:</b>").append('\n');
+        final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM-dd");
+        final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        final Map<LocalDate, List<Session>> sessionsByDate = sessions.stream()
+            .sorted(Comparator.comparing(Session::dateTime))
+            .collect(
+                Collectors.groupingBy(
+                    session -> session.dateTime().toLocalDate(),
+                    LinkedHashMap::new,
+                    Collectors.toList()
+                )
             );
+        for (final Map.Entry<LocalDate, List<Session>> dateEntry : sessionsByDate.entrySet()) {
+            builder.append("  <b>")
+                .append(dateEntry.getKey().format(dateFormatter))
+                .append("</b>").append('\n');
+            final Map<String, List<Session>> sessionsByCinema = dateEntry.getValue().stream()
+                .collect(
+                    Collectors.groupingBy(
+                        Session::cinema,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                    )
+                );
+            for (final Map.Entry<String, List<Session>> cinemaEntry : sessionsByCinema.entrySet()) {
+                final String cinema = cinemaEntry.getKey();
+                final List<Session> cinemaSessions = cinemaEntry.getValue();
+                final Session firstSession = cinemaSessions.get(0);
+                builder.append(
+                    String.format("    <b>%s</b> (Адрес: <i>%s</i>)", cinema, firstSession.address())
+                ).append('\n');
+                final String sessionsString = cinemaSessions.stream()
+                    .map(session -> String.format(
+                        "%s - %d RUB",
+                        session.dateTime().format(timeFormatter),
+                        session.price())
+                    )
+                    .collect(Collectors.joining(", "));
+                builder.append("      ").append(sessionsString).append('\n');
+            }
         }
         return builder.toString();
     }
