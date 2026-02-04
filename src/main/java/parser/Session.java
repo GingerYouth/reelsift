@@ -12,7 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /** Session DTO. */
-@SuppressWarnings({"PMD.ConsecutiveLiteralAppends", "PMD.TooManyMethods"})
+@SuppressWarnings({"PMD.ConsecutiveLiteralAppends"})
 public record Session(
     LocalDateTime dateTime, String name, String description, String verdict,
     List<String> genres, String cinema, String address, int price, String link,

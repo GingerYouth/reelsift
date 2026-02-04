@@ -15,6 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import parser.Session;
 
 /**
@@ -133,7 +134,7 @@ public final class SearchService {
                 this.messageSender.getTelegramClient().execute(sendPhoto);
             } catch (final TelegramApiException e) {
                 if (LOGGER.isErrorEnabled()) {
-                    LOGGER.error("Failed to send photo with inline button for URL {}", film.imageUrl(), e);
+                    LOGGER.error("Failed to send photo with inline button for URL {}", film.imageUrl());
                 }
                 // Fallback to sending just the message with button if photo sending fails
                 final SendMessage message = new SendMessage(chatIdString, caption);
