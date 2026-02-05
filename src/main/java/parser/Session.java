@@ -259,8 +259,11 @@ public final class Session {
                         .map(Object::toString)
                         .collect(Collectors.joining(", "))
                 )
-                .append("\n<b>О чём:</b> ").append(group.verdict()).append('\n')
-                .append("<b>Описание:</b> ").append(group.description).append('\n');
+                .append('\n');
+                if (group.verdict() != null && !group.verdict().isEmpty() && !"null".equals(group.verdict())) {
+                    builder.append("<b>О чём:</b> ").append(group.verdict()).append('\n');
+                }
+                builder.append("<b>Описание:</b> ").append(group.description).append('\n');
 
             // Always add the message with the sessions omitted from the text and placed in the omittedSessions list.
             result.add(
