@@ -1,22 +1,24 @@
 package cache;
 
-import parser.City;
-import parser.Session;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import parser.City;
+import parser.Session;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.params.ScanParams;
+import redis.clients.jedis.resps.ScanResult;
 
 /**
  * Provides caching functionality for {@link Session} objects using Redis.
@@ -38,6 +40,7 @@ public class RedisCache {
     private static final Logger LOGGER = Logger.getLogger(RedisCache.class.getName());
     private static final int DEFAULT_POOL_SIZE = 10;
     private static final long MINIMUM_TTL_SECONDS = 300; // 5 minutes safety margin
+    private static final int SCAN_COUNT = 100;
 
     private final JedisPool jedisPool;
 
@@ -162,7 +165,7 @@ public class RedisCache {
 
         try (Jedis jedis = this.jedisPool.getResource()) {
             final String prefix = city.asPrefix() + date + ":";
-            final Set<String> keys = jedis.keys(prefix + "*");
+            final Set<String> keys = this.scanKeys(prefix + "*");
             
             if (keys.isEmpty()) {
                 LOGGER.fine(() -> String.format(
@@ -202,9 +205,9 @@ public class RedisCache {
      * @return List of dates with cached sessions, sorted in descending order
      */
     public List<LocalDate> getCachedDates(final City city) {
-        try (Jedis jedis = this.jedisPool.getResource()) {
+        try {
             final String prefix = city.asPrefix();
-            return jedis.keys(prefix + "*").stream()
+            return this.scanKeys(prefix + "*").stream()
                 .map(key -> {
                     final String datePart = key.substring(prefix.length());
                     // Extract date part before the first colon (if it exists)
@@ -230,8 +233,8 @@ public class RedisCache {
      * @return Number of cached date entries
      */
     public long getCacheSize(final City city) {
-        try (Jedis jedis = this.jedisPool.getResource()) {
-            return jedis.keys(city.asPrefix() + "*").size();
+        try {
+            return this.scanKeys(city.asPrefix() + "*").size();
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
                 "Failed to get cache size for %s: %s", city.name(), e.getMessage()
@@ -247,13 +250,16 @@ public class RedisCache {
      */
     public void invalidateCity(final City city) {
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final Set<String> keys = jedis.keys(city.asPrefix() + "*");
-            if (!keys.isEmpty()) {
-                jedis.del(keys.toArray(new String[0]));
-                LOGGER.info(() -> String.format(
-                    "Invalidated %d cache entries for %s", keys.size(), city.name()
-                ));
-            }
+            final ScanParams scanParams = new ScanParams().match(city.asPrefix() + "*").count(SCAN_COUNT);
+            String cursor = "0";
+            do {
+                final ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                final List<String> keys = scanResult.getResult();
+                if (!keys.isEmpty()) {
+                    jedis.del(keys.toArray(new String[0]));
+                }
+                cursor = scanResult.getCursor();
+            } while (!"0".equals(cursor));
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
                 "Failed to invalidate cache for %s: %s", city.name(), e.getMessage()
@@ -271,16 +277,17 @@ public class RedisCache {
         if (date == null) {
             return;
         }
-
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final String prefix = city.asPrefix() + date + ":";
-            final Set<String> keys = jedis.keys(prefix + "*");
-            if (!keys.isEmpty()) {
-                jedis.del(keys.toArray(new String[0]));
-                LOGGER.info(() -> String.format(
-                    "Invalidated %d cache entries for %s on %s", keys.size(), city.name(), date
-                ));
-            }
+            final ScanParams scanParams = new ScanParams().match(city.asPrefix() + date + ":*").count(SCAN_COUNT);
+            String cursor = "0";
+            do {
+                final ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                final List<String> keys = scanResult.getResult();
+                if (!keys.isEmpty()) {
+                    jedis.del(keys.toArray(new String[0]));
+                }
+                cursor = scanResult.getCursor();
+            } while (!"0".equals(cursor));
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
                 "Failed to invalidate cache for %s on %s: %s",
@@ -295,13 +302,16 @@ public class RedisCache {
      */
     public void invalidateAll() {
         try (Jedis jedis = this.jedisPool.getResource()) {
-            final Set<String> keys = jedis.keys("*");
-            if (!keys.isEmpty()) {
-                jedis.del(keys.toArray(new String[0]));
-                LOGGER.info(() -> String.format(
-                    "Invalidated all %d cache entries", keys.size()
-                ));
-            }
+            final ScanParams scanParams = new ScanParams().match("*").count(SCAN_COUNT);
+            String cursor = "0";
+            do {
+                final ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                final List<String> keys = scanResult.getResult();
+                if (!keys.isEmpty()) {
+                    jedis.del(keys.toArray(new String[0]));
+                }
+                cursor = scanResult.getCursor();
+            } while (!"0".equals(cursor));
         } catch (final Exception e) {
             LOGGER.severe(() -> String.format(
                 "Failed to invalidate all cache entries: %s", e.getMessage()
@@ -318,6 +328,20 @@ public class RedisCache {
             this.jedisPool.close();
             LOGGER.info("Redis connection pool closed");
         }
+    }
+
+    private Set<String> scanKeys(final String pattern) {
+        final Set<String> keys = new HashSet<>();
+        try (Jedis jedis = this.jedisPool.getResource()) {
+            final ScanParams scanParams = new ScanParams().match(pattern).count(SCAN_COUNT);
+            String cursor = "0";
+            do {
+                final ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                keys.addAll(scanResult.getResult());
+                cursor = scanResult.getCursor();
+            } while (!"0".equals(cursor));
+        }
+        return keys;
     }
 
 /**
