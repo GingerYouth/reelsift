@@ -6,10 +6,12 @@ import bots.enums.UserState;
 import bots.services.KeyboardService;
 import bots.services.SearchService;
 import bots.services.UserService;
-
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TriggerCommandHandler implements CommandHandler<TriggerCommand> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TriggerCommandHandler.class);
     private final UserService userService;
     private final KeyboardService keyboardService;
     private final SearchService searchService;
@@ -25,7 +27,7 @@ public class TriggerCommandHandler implements CommandHandler<TriggerCommand> {
     }
 
     @Override
-    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.AvoidThrowingRawExceptionTypes"})
+    @SuppressWarnings({"PMD.CyclomaticComplexity"})
     public void handle(final long chatId, final String chatIdStr, final TriggerCommand command) {
         switch (command) {
             case DATE:
@@ -77,7 +79,8 @@ public class TriggerCommandHandler implements CommandHandler<TriggerCommand> {
                 try {
                     this.searchService.performSearch(chatIdStr, chatId);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    LOGGER.error("Error during search for chat id: {}", chatId, e);
+                    keyboardService.showMainKeyboard(chatIdStr, "Произошла ошибка во время поиска. Попробуйте еще раз.");
                 }
                 break;
 
