@@ -1,5 +1,6 @@
 package filters;
 
+import java.io.IOException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,14 +15,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service for getting movie recommendations from DeepSeek AI API.
  * Sends user preferences and available movies to the API and parses
  * the response to filter matching movies.
  */
-@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DeepSeekService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeepSeekService.class);
     private static final String API_URL = "https://api.deepseek.com/v1/chat/completions";
     private static final String API_KEY = PropertiesLoader.get("deepSeekApiKey");
     private final String model;
@@ -93,12 +96,15 @@ public class DeepSeekService {
             if (response.statusCode() == 200) {
                 return parseResponse(response.body(), movies);
             } else {
-                System.err.println("DeepSeek API error: " + response.statusCode());
-                System.err.println("Response: " + response.body());
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("DeepSeek API error: {}. Response: {}", response.statusCode(), response.body());
+                }
                 return new ArrayList<>();
             }
-        } catch (final Exception e) {
-            System.err.println("DeepSeek request failed: " + e.getMessage());
+        } catch (final IOException | InterruptedException | JSONException e) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("DeepSeek request failed: {}", e.getMessage(), e);
+            }
             return new ArrayList<>();
         }
     }
@@ -135,9 +141,10 @@ public class DeepSeekService {
             return movies.stream()
                 .filter(m -> titles.contains(m.title()))
                 .collect(Collectors.toList());
-        } catch (Exception e) {
-            System.err.println("Parsing failed: " + e.getMessage());
-            System.err.println("Response: " + jsonResponse);
+        } catch (JSONException e) {
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Parsing failed: {}. Response: {}", e.getMessage(), jsonResponse, e);
+            }
             return new ArrayList<>();
         }
     }
