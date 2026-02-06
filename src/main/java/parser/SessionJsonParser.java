@@ -15,13 +15,26 @@ public final class SessionJsonParser {
         // Utility class
     }
 
+
     /**
-     * Parse sessions from Afisha API JSON response.
+     * Parse sessions from Afisha API JSON response without adding corresponding URL.
      *
      * @param json The JSON string from Afisha API
      * @return List of parsed sessions
      */
+    @Deprecated
     public static List<Session> parseSessions(final String json) {
+        return parseSessions(json, "");
+    }
+
+    /**
+     * Parse sessions from Afisha API JSON response.
+     *
+     * @param json The JSON string from Afisha API
+     * @param url The URL to the sessions page
+     * @return List of parsed sessions
+     */
+    public static List<Session> parseSessions(final String json, final String url) {
         if (json == null || json.isEmpty()) {
             return Collections.emptyList();
         }
@@ -49,7 +62,7 @@ public final class SessionJsonParser {
             final JSONObject item = items.getJSONObject(i);
             final JSONObject place = item.getJSONObject("Place");
             final JSONArray sessions = item.getJSONArray("Sessions");
-            result.addAll(createSessionsForPlace(sessions, info, distributorInfo, genres, place));
+            result.addAll(createSessionsForPlace(sessions, info, distributorInfo, genres, place, url));
         }
         return result;
     }
@@ -76,12 +89,13 @@ public final class SessionJsonParser {
         final JSONObject info,
         final JSONObject distributorInfo,
         final List<String> genres,
-        final JSONObject place
+        final JSONObject place,
+        final String url
     ) {
         final List<Session> result = new ArrayList<>();
         for (int j = 0; j < sessions.length(); j++) {
             final JSONObject session = sessions.getJSONObject(j);
-            result.add(createSession(session, info, distributorInfo, genres, place));
+            result.add(createSession(session, info, distributorInfo, genres, place, url));
         }
         return result;
     }
@@ -91,7 +105,8 @@ public final class SessionJsonParser {
         final JSONObject info,
         final JSONObject distributorInfo,
         final List<String> genres,
-        final JSONObject place
+        final JSONObject place,
+        final String url
     ) {
         final String price = session.get("MinPriceFormatted").toString();
         return new Session(
@@ -103,7 +118,7 @@ public final class SessionJsonParser {
             place.getString("Name"),
             place.get("Address").toString(),
             "null".equals(price) ? -1 : Integer.parseInt(price),
-            "link",
+            url,
             "russiansubtitlessession".equals(session.get("SubtitlesFormats").toString()),
             ""
         );

@@ -247,7 +247,7 @@ public class AfishaParser {
                     LOGGER.debug("Parsing schedule from: {}", url);
                 }
                 jsonPage = parseSchedulePage(url);
-                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage);
+                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage, url);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
                     if (LOGGER.isDebugEnabled()) {
