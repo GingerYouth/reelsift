@@ -3,12 +3,13 @@ package bots.services;
 import bots.enums.UserState;
 import filters.DateInterval;
 import filters.Genre;
-import parser.City;
-
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import parser.City;
 
+@SuppressWarnings("PMD.TooManyMethods")
 public class UserService {
     private final Map<Long, City> userCities = new ConcurrentHashMap<>();
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
@@ -18,6 +19,9 @@ public class UserService {
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
     private final Map<Long, String> aiPrompts = new ConcurrentHashMap<>();
     private final Set<Long> subFilters = ConcurrentHashMap.newKeySet();
+    private final Map<Long, Integer> dailyAiUsageCount = new ConcurrentHashMap<>();
+    private final Map<Long, Long> lastAiUsageDay = new ConcurrentHashMap<>();
+    public static final int AI_USAGE_LIMIT = 20;
 
     public City getUserCity(final long chatId) {
         return this.userCities.getOrDefault(chatId, City.MOSCOW);
@@ -118,5 +122,38 @@ public class UserService {
         this.timeFilters.remove(chatId);
         this.aiPrompts.remove(chatId);
         this.subFilters.remove(chatId);
+    }
+
+    public Map<Long, Long> getLastAiUsageDay() {
+        return this.lastAiUsageDay;
+    }
+
+    public Map<Long, Integer> getDailyAiUsageCount() {
+        return this.dailyAiUsageCount;
+    }
+
+    public boolean canUseAiFilter(final long chatId) {
+        final long today = LocalDate.now().toEpochDay();
+        final long userLastAiUsageDay = this.lastAiUsageDay.getOrDefault(chatId, 0L);
+        int currentCount = this.dailyAiUsageCount.getOrDefault(chatId, 0);
+        if (today > userLastAiUsageDay) {
+            this.dailyAiUsageCount.put(chatId, 0);
+            this.lastAiUsageDay.put(chatId, today);
+            currentCount = 0;
+        }
+        return currentCount < AI_USAGE_LIMIT;
+    }
+
+    public void incrementAiUsageCount(final long chatId) {
+        final long today = LocalDate.now().toEpochDay();
+        final long userLastAiUsageDay = this.lastAiUsageDay.getOrDefault(chatId, 0L);
+        final int currentCount = this.dailyAiUsageCount.getOrDefault(chatId, 0);
+        if (today > userLastAiUsageDay) {
+            this.dailyAiUsageCount.put(chatId, 1);
+            this.lastAiUsageDay.put(chatId, today);
+        } else {
+            this.dailyAiUsageCount.put(chatId, currentCount + 1);
+            this.lastAiUsageDay.put(chatId, today);
+        }
     }
 }

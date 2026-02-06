@@ -16,12 +16,16 @@ import static org.hamcrest.Matchers.*;
  * Unit tests for {@link FilterBuilder}.
  * Tests filter chain construction based on user preferences.
  */
+import static org.mockito.Mockito.mock;
+
 final class FilterBuilderTest {
+
+    private final MessageSender messageSender = mock(MessageSender.class);
 
     @Test
     void buildFiltersReturnsEmptyFiltersWhenNoPreferencesSet() {
         final UserService userService = new UserService();
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final long chatId = randomChatId();
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
@@ -41,7 +45,7 @@ final class FilterBuilderTest {
         final UserService userService = new UserService();
         final long chatId = randomChatId();
         userService.setTimeFilter(chatId, "12:00-16:00");
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Фильм А", List.of("Драма"), "10:00", false),
@@ -61,7 +65,7 @@ final class FilterBuilderTest {
         final UserService userService = new UserService();
         final long chatId = randomChatId();
         userService.setMandatoryGenres(chatId, EnumSet.of(Genre.DRAMA));
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Фильм А", List.of("Драма"), "14:00", false),
@@ -81,7 +85,7 @@ final class FilterBuilderTest {
         final UserService userService = new UserService();
         final long chatId = randomChatId();
         userService.setExcludedGenres(chatId, EnumSet.of(Genre.HORROR));
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Фильм А", List.of("Ужасы"), "14:00", false),
@@ -102,7 +106,7 @@ final class FilterBuilderTest {
         final long chatId = randomChatId();
         userService.setTimeFilter(chatId, "12:00-20:00");
         userService.setExcludedGenres(chatId, EnumSet.of(Genre.HORROR));
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Утренний фильм", List.of("Драма"), "10:00", false),
@@ -125,7 +129,7 @@ final class FilterBuilderTest {
         final long chatId2 = randomChatId();
         userService.setTimeFilter(chatId1, "10:00-12:00");
         userService.setExcludedGenres(chatId2, EnumSet.of(Genre.HORROR));
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters1 = builder.buildFilters(chatId1);
         final Filters filters2 = builder.buildFilters(chatId2);
         final List<Session> sessions = List.of(
@@ -149,7 +153,7 @@ final class FilterBuilderTest {
         final UserService userService = new UserService();
         final long chatId = randomChatId();
         userService.setMandatoryGenres(chatId, EnumSet.of(Genre.DRAMA, Genre.COMEDY));
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Только драма", List.of("Драма"), "14:00", false),
@@ -169,7 +173,7 @@ final class FilterBuilderTest {
         final UserService userService = new UserService();
         final long chatId = randomChatId();
         userService.setTimeFilter(chatId, "00:00-01:00");
-        final FilterBuilder builder = new FilterBuilder(userService);
+        final FilterBuilder builder = new FilterBuilder(userService, this.messageSender);
         final Filters filters = builder.buildFilters(chatId);
         final List<Session> sessions = List.of(
             randomSession("Фильм А", List.of("Драма"), "14:00", false),

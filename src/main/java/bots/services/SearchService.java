@@ -51,7 +51,7 @@ public final class SearchService {
         final SessionCallbackStore callbackStore
     ) {
         this.cacheManager = new SessionCacheManager(redisCache);
-        this.filterBuilder = new FilterBuilder(userService);
+        this.filterBuilder = new FilterBuilder(userService, messageSender);
         this.messageSender = messageSender;
         this.userService = userService;
         this.callbackStore = callbackStore;
