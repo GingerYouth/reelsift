@@ -15,9 +15,11 @@ import java.util.stream.Collectors;
 public class FilterBuilder {
 
     private final UserService userService;
+    private final MessageSender messageSender;
 
-    public FilterBuilder(final UserService userService) {
+    public FilterBuilder(final UserService userService, final MessageSender messageSender) {
         this.userService = userService;
+        this.messageSender = messageSender;
     }
 
     /**
@@ -79,7 +81,15 @@ public class FilterBuilder {
     private void addAiFilter(final Filters filters, final long chatId) {
         final String aiPrompt = this.userService.getAiPrompt(chatId);
         if (aiPrompt != null) {
-            filters.addFilter(new LlmFilter(aiPrompt));
+            if (this.userService.canUseAiFilter(chatId)) {
+                this.userService.incrementAiFilterCount(chatId);
+                filters.addFilter(new LlmFilter(aiPrompt));
+            } else {
+                this.messageSender.sendMessage(
+                    String.valueOf(chatId),
+                    "Вы достигли дневного лимита на использование AI-фильтра."
+                );
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("PMD.TooManyMethods")
 public class UserService {
     private final Map<Long, City> userCities = new ConcurrentHashMap<>();
     private final Map<Long, UserState> userStates = new ConcurrentHashMap<>();
@@ -18,6 +19,8 @@ public class UserService {
     private final Map<Long, Set<Genre>> mandatoryGenres = new ConcurrentHashMap<>();
     private final Map<Long, String> aiPrompts = new ConcurrentHashMap<>();
     private final Set<Long> subFilters = ConcurrentHashMap.newKeySet();
+    private final Map<Long, Integer> aiFiltersPerDay = new ConcurrentHashMap<>();
+    private final Map<Long, Long> aiFiltersDay = new ConcurrentHashMap<>();
 
     public City getUserCity(final long chatId) {
         return this.userCities.getOrDefault(chatId, City.MOSCOW);
@@ -118,5 +121,19 @@ public class UserService {
         this.timeFilters.remove(chatId);
         this.aiPrompts.remove(chatId);
         this.subFilters.remove(chatId);
+    }
+
+    public boolean canUseAiFilter(final long chatId) {
+        final long today = java.time.LocalDate.now().toEpochDay();
+        final long userDay = this.aiFiltersDay.getOrDefault(chatId, 0L);
+        if (today > userDay) {
+            this.aiFiltersPerDay.put(chatId, 0);
+            this.aiFiltersDay.put(chatId, today);
+        }
+        return this.aiFiltersPerDay.getOrDefault(chatId, 0) < 20;
+    }
+
+    public void incrementAiFilterCount(final long chatId) {
+        this.aiFiltersPerDay.put(chatId, this.aiFiltersPerDay.getOrDefault(chatId, 0) + 1);
     }
 }
