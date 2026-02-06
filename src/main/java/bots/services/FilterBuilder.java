@@ -5,6 +5,7 @@ import filters.Filters;
 import filters.Genre;
 import filters.LlmFilter;
 import filters.MandatoryGenres;
+import filters.SubsFilter;
 import filters.TimeFilter;
 
 import java.util.Set;
@@ -31,7 +32,14 @@ public class FilterBuilder {
         addMandatoryGenresFilter(filters, chatId);
         addExcludedGenresFilter(filters, chatId);
         addAiFilter(filters, chatId);
+        addSubsFilter(filters, chatId);
         return filters;
+    }
+
+    private void addSubsFilter(final Filters filters, final long chatId) {
+        if (this.userService.hasSubsFilter(chatId)) {
+            filters.addFilter(new SubsFilter());
+        }
     }
 
     private void addTimeFilter(final Filters filters, final long chatId) {
