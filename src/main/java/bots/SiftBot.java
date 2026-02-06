@@ -39,10 +39,18 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
      * Creates the bot with default Redis and Telegram configuration.
      */
     public SiftBot() {
+        this(new RedisCache("localhost", 6379));
+    }
+
+    /**
+     * Creates the bot with the given Redis cache.
+     *
+     * @param redisCache The Redis cache to use for session caching
+     */
+    public SiftBot(final RedisCache redisCache) {
         this.userService = new UserService();
         this.messageSender = new MessageSender();
         this.callbackStore = new SessionCallbackStore();
-        final RedisCache redisCache = new RedisCache("localhost", 6379);
         final KeyboardService keyboardService = new KeyboardService(
             this.messageSender, this.userService
         );
