@@ -1,7 +1,15 @@
 package bots;
 
-import bots.services.*;
-import bots.services.handlers.*;
+import bots.services.KeyboardService;
+import bots.services.MessageSender;
+import bots.services.SearchService;
+import bots.services.SessionCallbackStore;
+import bots.services.UserService;
+import bots.services.handlers.DeleteCommandHandler;
+import bots.services.handlers.EditCommandHandler;
+import bots.services.handlers.MessageHandler;
+import bots.services.handlers.TriggerCommandHandler;
+import bots.services.handlers.UserInputHandler;
 import cache.RedisCache;
 import java.util.List;
 import java.util.Optional;
