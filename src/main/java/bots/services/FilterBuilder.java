@@ -82,7 +82,7 @@ public class FilterBuilder {
         final String aiPrompt = this.userService.getAiPrompt(chatId);
         if (aiPrompt != null) {
             if (this.userService.canUseAiFilter(chatId)) {
-                this.userService.incrementAiFilterCount(chatId);
+                this.userService.incrementAiUsageCount(chatId);
                 filters.addFilter(new LlmFilter(aiPrompt));
             } else {
                 this.messageSender.sendMessage(
