@@ -266,6 +266,7 @@ public class AfishaParser {
                 break;
             } catch (final JSONException | IOException e) {
                 LOGGER.error("Error parsing schedule for link {} and date {}", link, date, e);
+                break;
             }
         } while (!jsonPage.isEmpty());
         if (LOGGER.isInfoEnabled()) {
