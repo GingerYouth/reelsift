@@ -35,7 +35,7 @@ public class EditCommandHandler implements CommandHandler<EditCommand> {
                     String.format(
                         "Текущие исключения: %s\n\n%s",
                         excludedAsStr.isEmpty() ? Common.NOT_SET_UP.getName() : excludedAsStr,
-                        Guide.EXCLUDED
+                        Guide.EXCLUDED.getName()
                     )
                 );
                 break;
@@ -53,7 +53,7 @@ public class EditCommandHandler implements CommandHandler<EditCommand> {
                         String.format(
                             "Текущие предпочтения: %s\n\n%s",
                             mandatoryAsStr.isEmpty() ? Common.NOT_SET_UP.getName() : mandatoryAsStr,
-                            Guide.MANDATORY
+                            Guide.MANDATORY.getName()
                         )
                     );
                 }
@@ -64,7 +64,7 @@ public class EditCommandHandler implements CommandHandler<EditCommand> {
                 final String currentTime = this.userService.getTimeFilter(chatId) != null ? this.userService.getTimeFilter(chatId) : Common.NOT_SET_UP.getName();
                 keyboardService.showMainKeyboard(
                     chatIdStr,
-                    String.format("Текущее время: %s\n\n%s", currentTime, Guide.TIME)
+                    String.format("Текущее время: %s\n\n%s", currentTime, Guide.TIME.getName())
                 );
                 break;
 
@@ -73,7 +73,7 @@ public class EditCommandHandler implements CommandHandler<EditCommand> {
                 final String currentPrompt = this.userService.getAiPrompt(chatId) != null ? this.userService.getAiPrompt(chatId) : Common.NOT_SET_UP.getName();
                 keyboardService.showMainKeyboard(
                     chatIdStr,
-                    String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, Guide.AI_PROMPT)
+                    String.format("Текущий AI-запрос: %s\n\n%s", currentPrompt, Guide.AI_PROMPT.getName())
                 );
                 break;
 
