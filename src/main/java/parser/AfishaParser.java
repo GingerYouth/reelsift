@@ -234,11 +234,11 @@ public class AfishaParser {
      * @param date The date in dd-MM-yyyy format
      * @return The list of {@link Session}
      */
-    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
+    @SuppressWarnings("PMD.CognitiveComplexity")
     public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
         int page = 1;
-        String jsonPage;
+        String jsonPage = "";
         Set<String> prevCinemas = new HashSet<>();
         do {
             try {
@@ -266,7 +266,6 @@ public class AfishaParser {
                 break;
             } catch (final JSONException | IOException e) {
                 LOGGER.error("Error parsing schedule for link {} and date {}", link, date, e);
-                throw new IOException("Failed to parse schedule", e);
             }
         } while (!jsonPage.isEmpty());
         if (LOGGER.isInfoEnabled()) {

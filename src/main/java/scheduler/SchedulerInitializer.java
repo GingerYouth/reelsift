@@ -20,7 +20,7 @@ public final class SchedulerInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerInitializer.class);
     private static final String JOB_ID = "daily-session-cache";
     private static final int SCHEDULE_HOUR = 2;
-    private static final int SCHEDULE_MINUTE = 18;
+    private static final int SCHEDULE_MINUTE = 33;
     private static final String MOSCOW_TIMEZONE = "Europe/Moscow";
 
     private final RedisCache redisCache;

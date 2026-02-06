@@ -10,12 +10,6 @@ import parser.City;
 /**
  * Job that caches movie sessions for all cities for the next 3 weeks.
  * Designed to run as a scheduled background job via JobRunr.
- *
- * <p>Usage example:
- * <pre>
- * CacheJob job = new CacheJob(cacheManager);
- * job.cacheAllCities();
- * </pre>
  */
 public final class CacheJob {
 
