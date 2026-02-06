@@ -238,7 +238,7 @@ public class AfishaParser {
     public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
         int page = 1;
-        String jsonPage = "";
+        String jsonPage;
         Set<String> prevCinemas = new HashSet<>();
         do {
             try {
