@@ -11,6 +11,7 @@ import bots.services.handlers.MessageHandler;
 import bots.services.handlers.TriggerCommandHandler;
 import bots.services.handlers.UserInputHandler;
 import cache.RedisCache;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,9 @@ import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateC
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import parser.Session;
 
 /** Telegram bot logic. */
@@ -125,42 +129,55 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
         final String formatted = Session.formatSessionLines(
             callback.sessions()
         );
+        InlineKeyboardMarkup keyboardMarkup = null;
+        if (!callback.sessions().isEmpty()) {
+            final InlineKeyboardButton button = new InlineKeyboardButton("Купить билет");
+            button.setUrl(callback.sessions().getFirst().link());
+            keyboardMarkup = new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button)));
+        }
         this.sendLongMessage(
             callback.chatId(),
             formatted,
-            callbackQuery.getMessage().getMessageId()
+            callbackQuery.getMessage().getMessageId(),
+            keyboardMarkup
         );
         this.messageSender.answerCallback(callbackQuery.getId());
     }
 
     /**
-     * Splits and sends a long message.
+     * Splits and sends a long message, attaching a keyboard to the last part.
      *
      * @param chatId The chat ID
      * @param text The text to send
      * @param replyToMessageId The ID of the message to reply to
+     * @param keyboardMarkup The keyboard to attach to the last message part
      */
     // TODO:: Move to MessageSender?
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private void sendLongMessage(
         final String chatId,
         final String text,
-        final Integer replyToMessageId
+        final Integer replyToMessageId,
+        final InlineKeyboardMarkup keyboardMarkup
     ) {
         final int maxLen = 4096;
         if (text.length() <= maxLen) {
             final SendMessage reply = new SendMessage(chatId, text);
             reply.setReplyToMessageId(replyToMessageId);
+            if (keyboardMarkup != null) {
+                reply.setReplyMarkup(keyboardMarkup);
+            }
             this.messageSender.sendMessage(reply);
             return;
         }
+
         final String[] lines = text.split("\n");
         final StringBuilder messageBuilder = new StringBuilder();
         boolean firstPart = true;
-        for (final String line : lines) {
+
+        for (final String line: lines) {
             if (messageBuilder.length() + line.length() + 1 > maxLen) {
-                final SendMessage reply =
-                    new SendMessage(chatId, messageBuilder.toString());
+                final SendMessage reply = new SendMessage(chatId, messageBuilder.toString());
                 if (firstPart) {
                     reply.setReplyToMessageId(replyToMessageId);
                     firstPart = false;
@@ -170,11 +187,14 @@ public class SiftBot implements LongPollingSingleThreadUpdateConsumer {
             }
             messageBuilder.append(line).append('\n');
         }
+
         if (!messageBuilder.isEmpty()) {
-            final SendMessage reply =
-                new SendMessage(chatId, messageBuilder.toString());
+            final SendMessage reply = new SendMessage(chatId, messageBuilder.toString());
             if (firstPart) {
                 reply.setReplyToMessageId(replyToMessageId);
+            }
+            if (keyboardMarkup != null) {
+                reply.setReplyMarkup(keyboardMarkup);
             }
             this.messageSender.sendMessage(reply);
         }
