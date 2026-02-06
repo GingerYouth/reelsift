@@ -58,10 +58,13 @@ public class TriggerCommandHandler implements CommandHandler<TriggerCommand> {
             case SUBS_EN:
                 this.userService.addSubsFilter(chatId);
                 this.userService.setUserState(chatId, UserState.IDLE);
+                this.keyboardService.showMainKeyboard(chatIdStr, "✅ Фильтр по субтитрам включен");
                 break;
 
             case SUBS_DIS:
                 this.userService.removeSubsFilter(chatId);
+                this.userService.setUserState(chatId, UserState.IDLE);
+                this.keyboardService.showMainKeyboard(chatIdStr, "✅ Фильтр по субтитрам выключен");
                 break;
 
             case EDIT:
