@@ -14,10 +14,13 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Manages session caching and retrieval from Redis. */
 public class SessionCacheManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionCacheManager.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM");
     private static final DateTimeFormatter SCHEDULE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -86,7 +89,14 @@ public class SessionCacheManager {
         final LocalDate startDate = parseDateFromRange(rangeDates[0]);
         final LocalDate endDate = parseDateFromRange(rangeDates[1]);
 
-        for (final MovieThumbnail thumbnail : thumbnails) {
+        for (int i = 0; i < thumbnails.size(); i++) {
+            final MovieThumbnail thumbnail = thumbnails.get(i);
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(
+                    "Parsing sessions for film {}/{}: {}",
+                    i + 1, thumbnails.size(), thumbnail.name()
+                );
+            }
             for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
                 if (missingDates.contains(date)) {
                     cacheSessionsForDate(
