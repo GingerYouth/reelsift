@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +36,7 @@ import redis.clients.jedis.resps.ScanResult;
  * <h2>Thread Safety</h2>
  * Uses {@link JedisPool} for safe concurrent access from multiple bot users.
  */
-@SuppressWarnings("PMD.AvoidCatchingGenericException")
+@SuppressWarnings({"PMD.AvoidCatchingGenericException", "PMD.TooManyMethods"})
 public class RedisCache {
     private static final Logger LOGGER = Logger.getLogger(RedisCache.class.getName());
     private static final int DEFAULT_POOL_SIZE = 10;
@@ -109,10 +110,16 @@ public class RedisCache {
                     }
                     allSessions.addAll(filmSessions);
 
-                    // Remove duplicates by using a set of unique session identifiers
-                    final List<Session> uniqueSessions = allSessions.stream()
-                        .distinct()
-                        .collect(Collectors.toList());
+                    final List<Session> uniqueSessions = new ArrayList<>(
+                        allSessions.stream()
+                            .collect(Collectors.toMap(
+                                RedisCache::sessionBusinessKey,
+                                s -> s,
+                                (existing, replacement) -> existing,
+                                LinkedHashMap::new
+                            ))
+                            .values()
+                    );
 
                     final String json = Session.toJson(uniqueSessions);
                     jedis.set(key, json);
@@ -328,6 +335,18 @@ public class RedisCache {
             this.jedisPool.close();
             LOGGER.info("Redis connection pool closed");
         }
+    }
+
+    /**
+     * Builds a business key for session deduplication.
+     * Sessions sharing the same dateTime, cinema, and price
+     * represent the same showtime regardless of other metadata.
+     *
+     * @param session Session to build key for
+     * @return Composite business key string
+     */
+    private static String sessionBusinessKey(final Session session) {
+        return session.dateTime() + "|" + session.cinema() + "|" + session.price();
     }
 
     private Set<String> scanKeys(final String pattern) {

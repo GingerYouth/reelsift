@@ -128,6 +128,7 @@ public class AfishaParser {
     public List<MovieThumbnail> parseFilmsInDates(final String dates) throws IOException {
         final List<MovieThumbnail> films = new ArrayList<>();
         List<MovieThumbnail> pageFilms;
+        Set<String> prevNames = new HashSet<>();
         int page = 0;
         do {
             try {
@@ -136,6 +137,17 @@ public class AfishaParser {
                     LOGGER.debug("Parsing films from: {}", url);
                 }
                 pageFilms = parseFilmsPage(url);
+                final Set<String> names = pageFilms
+                    .stream()
+                    .map(MovieThumbnail::name)
+                    .collect(Collectors.toSet());
+                if (prevNames.equals(names)) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Found duplicate film page, stopping parse");
+                    }
+                    break;
+                }
+                prevNames = names;
                 page++;
                 films.addAll(pageFilms);
                 addRandomDelay();

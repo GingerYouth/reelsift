@@ -325,6 +325,7 @@ public final class Session {
                         session.dateTime().format(timeFormatter),
                         session.price())
                     )
+                    .distinct()
                     .collect(Collectors.joining(", "));
                 builder.append("      ").append(sessionsString).append('\n');
             }
