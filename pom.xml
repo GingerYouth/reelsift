@@ -85,6 +85,11 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.8</version>
         </dependency>
+        <dependency>
+            <groupId>org.jobrunr</groupId>
+            <artifactId>jobrunr</artifactId>
+            <version>7.5.0</version>
+        </dependency>
     </dependencies>
 
     <build>

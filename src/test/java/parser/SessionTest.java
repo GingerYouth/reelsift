@@ -351,4 +351,70 @@ public class SessionTest {
             not(containsString(cinemaName))
         );
     }
+
+    @Test
+    public void formatSessionLinesDeduplicatesSessionsWithDifferentLinks() {
+        final String cinemaName = "Cinema " + UUID.randomUUID();
+        final LocalDateTime dateTime = LocalDateTime.of(2024, 3, 15, 9, 35);
+        final List<Session> sessions = IntStream.range(0, 5)
+            .mapToObj(i -> new Session(
+                dateTime, "Film", "Desc", "Verdict",
+                List.of("Drama"), cinemaName, "Addr", 940,
+                "link/page" + i + "/", false
+            ))
+            .toList();
+        final String formatted = Session.formatSessionLines(sessions);
+        final int count = formatted.split("09:35 - 940 RUB", -1).length - 1;
+        assertThat(
+            "cant show each unique session time only once per cinema",
+            count,
+            is(1)
+        );
+    }
+
+    @Test
+    public void formatSessionLinesDeduplicatesSessionsWithDifferentImageUrls() {
+        final String cinemaName = "Cinema " + UUID.randomUUID();
+        final LocalDateTime dateTime = LocalDateTime.of(2024, 3, 15, 14, 0);
+        final List<Session> sessions = IntStream.range(0, 3)
+            .mapToObj(i -> new Session(
+                dateTime, "Film", "Desc", "Verdict",
+                List.of("Action"), cinemaName, "Addr", 500,
+                "link", false, "image" + i + ".jpg"
+            ))
+            .toList();
+        final String formatted = Session.formatSessionLines(sessions);
+        final int count = formatted.split("14:00 - 500 RUB", -1).length - 1;
+        assertThat(
+            "cant show each unique session time only once regardless of imageUrl",
+            count,
+            is(1)
+        );
+    }
+
+    @Test
+    public void formatSessionLinesKeepsDistinctTimesAtSameCinema() {
+        final String cinemaName = "Cinema " + UUID.randomUUID();
+        final List<Session> sessions = List.of(
+            new Session(
+                LocalDateTime.of(2024, 3, 15, 9, 35),
+                "Film", "Desc", "Verdict",
+                List.of("Drama"), cinemaName, "Addr", 940, "link", false
+            ),
+            new Session(
+                LocalDateTime.of(2024, 3, 15, 13, 20),
+                "Film", "Desc", "Verdict",
+                List.of("Drama"), cinemaName, "Addr", 940, "link", false
+            )
+        );
+        final String formatted = Session.formatSessionLines(sessions);
+        assertThat(
+            "cant keep both distinct session times in output",
+            formatted,
+            allOf(
+                containsString("09:35"),
+                containsString("13:20")
+            )
+        );
+    }
 }
