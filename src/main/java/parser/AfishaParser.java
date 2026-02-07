@@ -35,37 +35,44 @@ public class AfishaParser {
     private final Retrier retrier;
     private static final DateTimeFormatter SCHEDULE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
-    private static final String USER_AGENT =
-        "Mozilla/5.0 (Windows NT 11.0; Win64; x64) "
-        + "AppleWebKit/537.36 (KHTML, like Gecko) "
-        + "Chrome/134.0.6998.166 Safari/537.36";
+    private final BrowserProfile browserProfile;
 
     private static final Pattern FILM_REF_PATTERN = Pattern.compile(
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 1000;
-    private static final int MAX_DELAY_MS = 3000;
+    private static final int MIN_DELAY_MS = 3000;
+    private static final int MAX_DELAY_MS = 7000;
     private static final long RETRY_BUDGET_MS = 300_000L;
     private static final long RETRY_INITIAL_DELAY_MS = 5_000L;
-    private static final Random RANDOM = new Random();
 
     public AfishaParser(final City city) throws IOException {
         this.filmsPageN = "https://www.afisha.ru/" + city.asCode() + "/schedule_cinema/%s/page%d/";
         this.retrier = new Retrier(RETRY_BUDGET_MS, RETRY_INITIAL_DELAY_MS);
+        this.browserProfile = BrowserProfile.random();
         this.cookies = this.getCookies();
         this.currentDatePeriod = LocalDate.now().format(SCHEDULE_DATE_FORMATTER);
     }
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     private Map<String, String> getCookies() throws IOException {
         final Map<String, String> cookies;
         try {
             final Connection.Response initialResponse = this.retrier.execute(
-                () -> Jsoup.connect(BASE_LINK)
-                    .method(Connection.Method.GET)
-                    .userAgent(USER_AGENT)
-                    .timeout(30_000)
-                    .execute()
+                () -> {
+                    try {
+                        return browserProfile.applyTo(
+                            Jsoup.connect(BASE_LINK)
+                                .method(Connection.Method.GET)
+                                .timeout(30_000)
+                        ).execute();
+                    } catch (final HttpStatusException httpEx) {
+                        if (isRetryable(httpEx.getStatusCode())) {
+                            throw httpEx;
+                        }
+                        throw new NonRetryableIoException(httpEx);
+                    }
+                }
             );
             cookies = initialResponse.cookies();
             if (LOGGER.isDebugEnabled()) {
@@ -89,7 +96,7 @@ public class AfishaParser {
         final List<MovieThumbnail> films = new ArrayList<>();
         List<MovieThumbnail> pageFilms;
         Set<String> prevNames = new HashSet<>();
-        int page = 0;
+        int page = 1;
         do {
             try {
                 final String url = String.format(this.filmsPageN, dates, page);
@@ -132,10 +139,19 @@ public class AfishaParser {
     private List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
         final List<MovieThumbnail> thumbnails = new ArrayList<>();
         final Document document = this.retrier.execute(
-            () -> Jsoup.connect(link)
-                .userAgent(USER_AGENT)
-                .timeout(30_000)
-                .get()
+            () -> {
+                try {
+                    return browserProfile.applyTo(
+                        Jsoup.connect(link)
+                            .timeout(30_000)
+                    ).get();
+                } catch (final HttpStatusException httpEx) {
+                    if (isRetryable(httpEx.getStatusCode())) {
+                        throw httpEx;
+                    }
+                    throw new NonRetryableIoException(httpEx);
+                }
+            }
         );
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
 
@@ -254,23 +270,55 @@ public class AfishaParser {
 
     private String parseSchedulePage(final String page) throws IOException {
         return this.retrier.execute(
-            () -> Jsoup.connect(page)
-                .ignoreContentType(true)
-                .cookies(this.cookies)
-                .header("Accept", "application/json")
-                .header("Sec-Fetch-Dest", "empty")
-                .header("Sec-Fetch-Mode", "cors")
-                .header("Sec-Fetch-Site", "same-origin")
-                .userAgent(USER_AGENT)
-                .timeout(30_000)
-                .execute()
-                .body()
+            () -> {
+                final Connection.Response response;
+                try {
+                    response = browserProfile.applyTo(
+                        Jsoup.connect(page)
+                            .ignoreContentType(true)
+                            .followRedirects(false)
+                            .cookies(cookies)
+                            .header("Accept", "application/json")
+                            .header("Sec-Fetch-Dest", "empty")
+                            .header("Sec-Fetch-Mode", "cors")
+                            .header("Sec-Fetch-Site", "same-origin")
+                            .timeout(30_000)
+                    ).execute();
+                } catch (final HttpStatusException httpEx) {
+                    if (isRetryable(httpEx.getStatusCode())) {
+                        throw httpEx;
+                    }
+                    throw new NonRetryableIoException(httpEx);
+                }
+                final int status = response.statusCode();
+                if (status >= 300 && status < 400) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(
+                            "Schedule page {} redirected with status {}, returning empty",
+                            page, status
+                        );
+                    }
+                    return "";
+                }
+                return response.body();
+            }
         );
+    }
+
+    /**
+     * Checks whether an HTTP status code represents a transient error
+     * that should be retried (429 Too Many Requests or server errors 5xx).
+     *
+     * @param statusCode the HTTP status code
+     * @return true if the error is transient and should be retried
+     */
+    private static boolean isRetryable(final int statusCode) {
+        return statusCode == 429 || statusCode >= 500;
     }
 
     private static void addRandomDelay() {
         try {
-            final long delay = RANDOM.nextInt(MAX_DELAY_MS - MIN_DELAY_MS) + MIN_DELAY_MS;
+            final long delay = new Random().nextInt(MAX_DELAY_MS - MIN_DELAY_MS) + MIN_DELAY_MS;
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Adding a delay of {}ms before the next request.", delay);
             }

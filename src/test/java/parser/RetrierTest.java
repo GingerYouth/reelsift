@@ -120,6 +120,26 @@ final class RetrierTest {
   }
 
   @Test
+  void doesNotRetryNonRetryableException() {
+    final AtomicInteger counter = new AtomicInteger(0);
+    final IOException original = new IOException("not found");
+    boolean thrown = false;
+    try {
+      new Retrier(5000L, 10L).execute(() -> {
+        counter.incrementAndGet();
+        throw new NonRetryableIoException(original);
+      });
+    } catch (final IOException ex) {
+      thrown = ex == original;
+    }
+    assertThat(
+        "cant skip retry and throw the unwrapped original on NonRetryableIoException",
+        thrown && counter.get() == 1,
+        is(true)
+    );
+  }
+
+  @Test
   void handlesInterruptionDuringRetry() {
     final Thread current = Thread.currentThread();
     boolean thrown = false;
