@@ -15,7 +15,6 @@ public final class SessionJsonParser {
         // Utility class
     }
 
-
     /**
      * Parse sessions from Afisha API JSON response without adding corresponding URL.
      *

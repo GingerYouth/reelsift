@@ -22,7 +22,7 @@ final class ThreeWeekIntervalTest {
 
         assertThat(
             "interval start date doesnt match provided date",
-            interval.getStart(),
+            interval.start(),
             is(equalTo(today))
         );
     }
@@ -35,7 +35,7 @@ final class ThreeWeekIntervalTest {
 
         assertThat(
             "interval end date doesnt match expected 20 days after start",
-            interval.getEnd(),
+            interval.end(),
             is(equalTo(today.plusDays(20)))
         );
     }

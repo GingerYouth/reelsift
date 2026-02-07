@@ -1,21 +1,26 @@
 package scheduler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-
 import bots.services.SessionCacheManager;
 import cache.RedisCache;
 import filters.DateInterval;
+import org.junit.jupiter.api.Test;
+import parser.AfishaParser;
+import parser.City;
+import parser.Session;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
-import parser.City;
-import parser.Session;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link CacheJob}.
@@ -25,7 +30,7 @@ final class CacheJobTest {
     @Test
     void cacheAllCitiesCachesAllThreeCities() {
         final SpyRedisCache spyCache = new SpyRedisCache();
-        final SessionCacheManager cacheManager = new SessionCacheManager(spyCache);
+        final TestSessionCacheManager cacheManager = new TestSessionCacheManager(spyCache);
         final LocalDate today = LocalDate.of(2025, 6, 15);
         final ThreeWeekInterval intervalFactory = new ThreeWeekInterval(today);
         final CacheJob job = new CacheJob(cacheManager, intervalFactory);
@@ -42,7 +47,7 @@ final class CacheJobTest {
     @Test
     void cacheAllCitiesUsesThreeWeekInterval() {
         final SpyRedisCache spyCache = new SpyRedisCache();
-        final SessionCacheManager cacheManager = new SessionCacheManager(spyCache);
+        final TestSessionCacheManager cacheManager = new TestSessionCacheManager(spyCache);
         final LocalDate today = LocalDate.of(2025, 6, 15);
         final ThreeWeekInterval intervalFactory = new ThreeWeekInterval(today);
         final CacheJob job = new CacheJob(cacheManager, intervalFactory);
@@ -52,7 +57,7 @@ final class CacheJobTest {
         assertThat(
             "job doesnt use correct start date",
             spyCache.getIntervalsChecked().stream()
-                .allMatch(i -> i.getStart().equals(today)),
+                .allMatch(i -> i.start().equals(today)),
             is(true)
         );
     }
@@ -60,7 +65,7 @@ final class CacheJobTest {
     @Test
     void cacheAllCitiesContinuesOnParseFailure() {
         final FailingRedisCache failingCache = new FailingRedisCache(City.MOSCOW);
-        final SessionCacheManager cacheManager = new SessionCacheManager(failingCache);
+        final TestSessionCacheManager cacheManager = new TestSessionCacheManager(failingCache);
         final LocalDate today = LocalDate.of(2025, 6, 15);
         final ThreeWeekInterval intervalFactory = new ThreeWeekInterval(today);
         final CacheJob job = new CacheJob(cacheManager, intervalFactory);
@@ -158,6 +163,31 @@ final class CacheJobTest {
 
         @Override
         public void close() {
+        }
+    }
+
+    /**
+     * Test-specific SessionCacheManager that provides a mocked AfishaParser.
+     */
+    private static final class TestSessionCacheManager extends SessionCacheManager {
+        TestSessionCacheManager(final RedisCache redisCache) {
+            super(redisCache);
+        }
+
+        @Override
+        protected AfishaParser createAfishaParser(final City city) {
+            final AfishaParser mockParser = mock(AfishaParser.class);
+            try {
+                when(mockParser.parseFilmsInDates(org.mockito.ArgumentMatchers.anyString()))
+                    .thenReturn(Collections.emptyList());
+                when(mockParser.parseSchedule(
+                    org.mockito.ArgumentMatchers.anyString(),
+                    org.mockito.ArgumentMatchers.anyString()
+                )).thenReturn(Collections.emptyList());
+            } catch (final IOException e) {
+                // Should not happen in a mock
+            }
+            return mockParser;
         }
     }
 }

@@ -3,10 +3,6 @@ package bots.services;
 import bots.enums.Guide;
 import cache.RedisCache;
 import filters.DateInterval;
-import filters.Filters;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -18,18 +14,17 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import parser.Session;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+
 /**
  * Service for performing movie session searches.
  * Sends results to Telegram with inline buttons for films
  * that have too many sessions to display inline.
  */
 public final class SearchService {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
-    private static final int MAX_CAPTION_LENGTH = 1024;
-    private static final String TRUNCATION_SUFFIX = " ...";
-    private static final int SESSION_THRESHOLD = 10;
-
     private final SessionCacheManager cacheManager;
     private final FilterBuilder filterBuilder;
     private final MessageSender messageSender;
@@ -68,33 +63,23 @@ public final class SearchService {
         final String chatIdString, final long chatId
     ) throws IOException {
         this.messageSender.sendMessage(chatIdString, Guide.SEARCH.getName());
-
-        final Filters filters = this.filterBuilder.buildFilters(chatId);
-        final DateInterval dateInterval = getDateInterval(chatId);
-
+        final DateInterval dateInterval = this.getDateInterval(chatId);
         this.cacheManager.ensureCached(
             dateInterval, this.userService.getUserCity(chatId)
         );
-
         final List<Session> sessions = this.cacheManager.getCachedSessions(
             dateInterval.getDatesInRange(),
             this.userService.getUserCity(chatId)
         );
-        final List<Session> filtered = filters.filter(sessions);
-
+        final List<Session> filtered = this.filterBuilder.buildFilters(chatId).filter(sessions);
         this.messageSender.sendMessage(
             chatIdString,
             String.format(
                 "\uD83C\uDFAC Найдено %s сеансов!", filtered.size()
             )
         );
-
-        for (
-            final Session.FilmMessage film
-                : Session.toSplitStrings(filtered, SESSION_THRESHOLD)
-        ) {
-            final String caption = truncateCaption(film.text());
-            sendWithInlineButton(chatIdString, film, caption);
+        for (final Session.FilmMessage film : Session.toSplitStrings(filtered)) {
+            sendWithInlineButton(chatIdString, film);
         }
     }
 
@@ -106,7 +91,7 @@ public final class SearchService {
      */
     @SuppressWarnings("PMD.LooseCoupling")
     private void sendWithInlineButton(
-        final String chatIdString, final Session.FilmMessage film, final String caption
+        final String chatIdString, final Session.FilmMessage film
     ) {
         final String callbackId = this.callbackStore.store(
             0, chatIdString, film.omittedSessions()
@@ -121,12 +106,12 @@ public final class SearchService {
         if (film.imageUrl() != null && !film.imageUrl().isEmpty()) {
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("Preparing to send photo for chat {} with URL: {} and caption length: {}",
-                    chatIdString, film.imageUrl(), caption.length());
+                    chatIdString, film.imageUrl(), film.truncatedText().length());
             }
             final SendPhoto sendPhoto = SendPhoto.builder()
                 .chatId(chatIdString)
                 .photo(new InputFile(film.imageUrl()))
-                .caption(caption)
+                .caption(film.truncatedText())
                 .parseMode(MessageSender.HTML)
                 .replyMarkup(keyboardMarkup) // Attach keyboard to photo
                 .build();
@@ -137,18 +122,18 @@ public final class SearchService {
                     LOGGER.error("Failed to send photo with inline button for URL {}", film.imageUrl());
                 }
                 // Fallback to sending just the message with button if photo sending fails
-                final SendMessage message = new SendMessage(chatIdString, caption);
+                final SendMessage message = new SendMessage(chatIdString, film.truncatedText());
                 message.setReplyMarkup(keyboardMarkup);
                 this.messageSender.sendAndGetId(message);
             }
         } else {
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Preparing to send text message for chat {} with caption length: {}",
-                    chatIdString, caption.length());
+                LOGGER.info(
+                    "Preparing to send text message for chat {} with caption length: {}",
+                    chatIdString, film.truncatedText().length()
+                );
             }
-            final SendMessage message = new SendMessage(
-                chatIdString, caption
-            );
+            final SendMessage message = new SendMessage(chatIdString, film.truncatedText());
             message.setReplyMarkup(keyboardMarkup);
             this.messageSender.sendAndGetId(message);
         }
@@ -167,12 +152,5 @@ public final class SearchService {
             return dateInterval;
         }
         return new DateInterval(LocalDate.now(), LocalDate.now());
-    }
-    
-    private String truncateCaption(final String text) {
-        if (text == null || text.length() <= MAX_CAPTION_LENGTH) {
-            return text;
-        }
-        return text.substring(0, MAX_CAPTION_LENGTH - TRUNCATION_SUFFIX.length()) + TRUNCATION_SUFFIX;
     }
 }
