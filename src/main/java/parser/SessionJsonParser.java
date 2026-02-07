@@ -1,39 +1,38 @@
 package parser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /** Parses JSON responses from Afisha API into Session objects. */
 public final class SessionJsonParser {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionJsonParser.class);
+    private static final int NEXT_DAY_HOUR = 3;
 
     private SessionJsonParser() {
         // Utility class
     }
 
     /**
-     * Parse sessions from Afisha API JSON response without adding corresponding URL.
-     *
-     * @param json The JSON string from Afisha API
-     * @return List of parsed sessions
-     */
-    @Deprecated
-    public static List<Session> parseSessions(final String json) {
-        return parseSessions(json, "");
-    }
-
-    /**
-     * Parse sessions from Afisha API JSON response.
+     * Parse sessions from Afisha API JSON response with date validation.
      *
      * @param json The JSON string from Afisha API
      * @param url The URL to the sessions page
-     * @return List of parsed sessions
+     * @param expectedDate The expected date for sessions
+     * @return List of parsed sessions, or empty list if any session date does not match expected date
      */
-    public static List<Session> parseSessions(final String json, final String url) {
+    public static List<Session> parseSessions(
+        final String json, final String url, final LocalDate expectedDate
+    ) {
         if (json == null || json.isEmpty()) {
             return Collections.emptyList();
         }
@@ -43,7 +42,7 @@ public final class SessionJsonParser {
 
         final List<String> genres = extractGenres(info);
         final JSONObject distributorInfo = extractDistributorInfo(info);
-        
+
         final JSONObject scheduleWidget = root.optJSONObject("ScheduleWidget");
         if (scheduleWidget == null) {
             return Collections.emptyList();
@@ -61,7 +60,16 @@ public final class SessionJsonParser {
             final JSONObject item = items.getJSONObject(i);
             final JSONObject place = item.getJSONObject("Place");
             final JSONArray sessions = item.getJSONArray("Sessions");
-            result.addAll(createSessionsForPlace(sessions, info, distributorInfo, genres, place, url));
+            final List<Session> placeSessions = createSessionsForPlace(
+                sessions, info, distributorInfo, genres, place, url, expectedDate
+            );
+            if (placeSessions.isEmpty() && !sessions.isEmpty()) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Discarded sessions from redirected page: {}", url);
+                }
+                return Collections.emptyList();
+            }
+            result.addAll(placeSessions);
         }
         return result;
     }
@@ -89,12 +97,19 @@ public final class SessionJsonParser {
         final JSONObject distributorInfo,
         final List<String> genres,
         final JSONObject place,
-        final String url
+        final String url,
+        final LocalDate expectedDate
     ) {
         final List<Session> result = new ArrayList<>();
         for (int j = 0; j < sessions.length(); j++) {
             final JSONObject session = sessions.getJSONObject(j);
-            result.add(createSession(session, info, distributorInfo, genres, place, url));
+            final Session created = createSession(session, info, distributorInfo, genres, place, url);
+            if (!created.dateTime().toLocalDate().equals(expectedDate)
+                && created.dateTime().toLocalTime().getHour() > NEXT_DAY_HOUR
+            ) {
+                return Collections.emptyList();
+            }
+            result.add(created);
         }
         return result;
     }

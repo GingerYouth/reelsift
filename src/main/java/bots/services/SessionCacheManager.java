@@ -116,7 +116,7 @@ public class SessionCacheManager {
     ) throws IOException {
         final String formattedDate = date.format(SCHEDULE_DATE_FORMATTER);
         final List<Session> sessions = parser.parseSchedule(
-            Utils.removeDateFromUrlEnd(filmUrl),
+            Utils.cleanFilmUrl(filmUrl),
             formattedDate
         );
         sessions.forEach(s -> s.setImageUrl(imageUrl));

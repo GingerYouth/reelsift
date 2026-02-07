@@ -41,8 +41,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 3000;
-    private static final int MAX_DELAY_MS = 7000;
+    private static final int MIN_DELAY_MS = 500;
+    private static final int MAX_DELAY_MS = 1000;
     private static final long RETRY_BUDGET_MS = 300_000L;
     private static final long RETRY_INITIAL_DELAY_MS = 5_000L;
 
@@ -61,7 +61,7 @@ public class AfishaParser {
             final Connection.Response initialResponse = this.retrier.execute(
                 () -> {
                     try {
-                        return browserProfile.applyTo(
+                        return this.browserProfile.applyTo(
                             Jsoup.connect(BASE_LINK)
                                 .method(Connection.Method.GET)
                                 .timeout(30_000)
@@ -230,6 +230,7 @@ public class AfishaParser {
     @SuppressWarnings("PMD.CognitiveComplexity")
     public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
+        final LocalDate expectedDate = LocalDate.parse(date, SCHEDULE_DATE_FORMATTER);
         int page = 1;
         String jsonPage;
         Set<String> prevCinemas = new HashSet<>();
@@ -240,7 +241,7 @@ public class AfishaParser {
                     LOGGER.debug("Parsing schedule from: {}", url);
                 }
                 jsonPage = parseSchedulePage(url);
-                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage, url);
+                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage, url, expectedDate);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
                     if (LOGGER.isDebugEnabled()) {

@@ -15,7 +15,7 @@ final class UtilsTest {
     void removeDateAndTrailingSlash() {
         assertThat(
             "cant remove date pattern with trailing slash from URL",
-            Utils.removeDateFromUrlEnd("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024/"),
+            Utils.cleanFilmUrl("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024/"),
             is(equalTo("https://www.afisha.ru/msk/cinema/film/12345"))
         );
     }
@@ -24,7 +24,7 @@ final class UtilsTest {
     void removeDate() {
         assertThat(
             "cant remove date pattern without trailing slash from URL",
-            Utils.removeDateFromUrlEnd("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024"),
+            Utils.cleanFilmUrl("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024"),
             is(equalTo("https://www.afisha.ru/msk/cinema/film/12345"))
         );
     }
@@ -35,7 +35,7 @@ final class UtilsTest {
         String expected = "https://www.afisha.ru/msk/schedule_cinema_product/cheburashka-2-295278";
         assertThat(
             "should remove date and everything after",
-            Utils.removeDateFromUrlEnd(url),
+            Utils.cleanFilmUrl(url),
             is(equalTo(expected))
         );
     }
@@ -45,8 +45,21 @@ final class UtilsTest {
         String url = "https://www.afisha.ru/msk/cinema/film/12345/";
         assertThat(
             "should not change a url that does not contain a date pattern",
-            Utils.removeDateFromUrlEnd(url),
+            Utils.cleanFilmUrl(url),
             is(equalTo(url))
+        );
+    }
+
+    @Test
+    void removeRcmrclid() {
+        assertThat(
+            "should not change a url that does not contain a date pattern",
+            Utils.cleanFilmUrl(
+                "https://www.afisha.ru/msk/schedule_cinema_product/gornichnaya-1001795/#rcmrclid=12c7dae16317e764"
+            ),
+            is(equalTo(
+                "https://www.afisha.ru/msk/schedule_cinema_product/gornichnaya-1001795"
+            ))
         );
     }
 }
