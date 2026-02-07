@@ -57,15 +57,25 @@ public class AfishaParser {
         this.currentDatePeriod = LocalDate.now().format(SCHEDULE_DATE_FORMATTER);
     }
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     private Map<String, String> getCookies() throws IOException {
         final Map<String, String> cookies;
         try {
             final Connection.Response initialResponse = this.retrier.execute(
-                () -> Jsoup.connect(BASE_LINK)
-                    .method(Connection.Method.GET)
-                    .userAgent(USER_AGENT)
-                    .timeout(30_000)
-                    .execute()
+                () -> {
+                    try {
+                        return Jsoup.connect(BASE_LINK)
+                            .method(Connection.Method.GET)
+                            .userAgent(USER_AGENT)
+                            .timeout(30_000)
+                            .execute();
+                    } catch (final HttpStatusException httpEx) {
+                        if (isRetryable(httpEx.getStatusCode())) {
+                            throw httpEx;
+                        }
+                        throw new NonRetryableIoException(httpEx);
+                    }
+                }
             );
             cookies = initialResponse.cookies();
             if (LOGGER.isDebugEnabled()) {
@@ -132,10 +142,19 @@ public class AfishaParser {
     private List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
         final List<MovieThumbnail> thumbnails = new ArrayList<>();
         final Document document = this.retrier.execute(
-            () -> Jsoup.connect(link)
-                .userAgent(USER_AGENT)
-                .timeout(30_000)
-                .get()
+            () -> {
+                try {
+                    return Jsoup.connect(link)
+                        .userAgent(USER_AGENT)
+                        .timeout(30_000)
+                        .get();
+                } catch (final HttpStatusException httpEx) {
+                    if (isRetryable(httpEx.getStatusCode())) {
+                        throw httpEx;
+                    }
+                    throw new NonRetryableIoException(httpEx);
+                }
+            }
         );
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
 
@@ -254,18 +273,50 @@ public class AfishaParser {
 
     private String parseSchedulePage(final String page) throws IOException {
         return this.retrier.execute(
-            () -> Jsoup.connect(page)
-                .ignoreContentType(true)
-                .cookies(this.cookies)
-                .header("Accept", "application/json")
-                .header("Sec-Fetch-Dest", "empty")
-                .header("Sec-Fetch-Mode", "cors")
-                .header("Sec-Fetch-Site", "same-origin")
-                .userAgent(USER_AGENT)
-                .timeout(30_000)
-                .execute()
-                .body()
+            () -> {
+                final Connection.Response response;
+                try {
+                    response = Jsoup.connect(page)
+                        .ignoreContentType(true)
+                        .followRedirects(false)
+                        .cookies(this.cookies)
+                        .header("Accept", "application/json")
+                        .header("Sec-Fetch-Dest", "empty")
+                        .header("Sec-Fetch-Mode", "cors")
+                        .header("Sec-Fetch-Site", "same-origin")
+                        .userAgent(USER_AGENT)
+                        .timeout(30_000)
+                        .execute();
+                } catch (final HttpStatusException httpEx) {
+                    if (isRetryable(httpEx.getStatusCode())) {
+                        throw httpEx;
+                    }
+                    throw new NonRetryableIoException(httpEx);
+                }
+                final int status = response.statusCode();
+                if (status >= 300 && status < 400) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(
+                            "Schedule page {} redirected with status {}, returning empty",
+                            page, status
+                        );
+                    }
+                    return "";
+                }
+                return response.body();
+            }
         );
+    }
+
+    /**
+     * Checks whether an HTTP status code represents a transient error
+     * that should be retried (429 Too Many Requests or server errors 5xx).
+     *
+     * @param statusCode the HTTP status code
+     * @return true if the error is transient and should be retried
+     */
+    private static boolean isRetryable(final int statusCode) {
+        return statusCode == 429 || statusCode >= 500;
     }
 
     private static void addRandomDelay() {

@@ -33,6 +33,8 @@ public final class Retrier {
   /**
    * Executes the given operation, retrying on {@link IOException}
    * with exponential backoff until the total retry budget is exhausted.
+   * {@link NonRetryableIoException} is never retried — its original
+   * exception is unwrapped and rethrown immediately.
    *
    * @param operation the IO operation to execute
    * @param <T> the result type
@@ -40,6 +42,7 @@ public final class Retrier {
    * @throws IOException if all retries are exhausted or the thread
    *     is interrupted during a retry delay
    */
+  @SuppressWarnings("PMD.PreserveStackTrace")
   public <T> T execute(final IoOperation<T> operation) throws IOException {
     final long startTime = System.currentTimeMillis();
     long delay = this.initialDelayMs;
@@ -49,6 +52,8 @@ public final class Retrier {
       try {
         attempt++;
         return operation.execute();
+      } catch (final NonRetryableIoException nonRetryable) {
+        throw nonRetryable.unwrap();
       } catch (final IOException ex) {
         lastException = ex;
         final long elapsed = System.currentTimeMillis() - startTime;
