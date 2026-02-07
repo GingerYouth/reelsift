@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,7 @@ final class SessionJsonParserTest {
     void parseSessionsReturnsEmptyListForNullInput() {
         assertThat(
             "cant return empty list for null input",
-            SessionJsonParser.parseSessions(null),
+            SessionJsonParser.parseSessions(null, "", LocalDate.of(2024, 1, 15)),
             is(empty())
         );
     }
@@ -33,7 +34,7 @@ final class SessionJsonParserTest {
     void parseSessionsReturnsEmptyListForEmptyString() {
         assertThat(
             "cant return empty list for empty string",
-            SessionJsonParser.parseSessions(""),
+            SessionJsonParser.parseSessions("", "", LocalDate.of(2024, 1, 15)),
             is(empty())
         );
     }
@@ -45,7 +46,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse movie name from JSON",
-            SessionJsonParser.parseSessions(json).get(0).name(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).name(),
             is(equalTo(movieName))
         );
     }
@@ -57,7 +58,9 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse dateTime from JSON",
-            SessionJsonParser.parseSessions(json).get(0).dateTime(),
+            SessionJsonParser.parseSessions(
+                json, "", LocalDate.of(2024, 3, 20)
+            ).get(0).dateTime(),
             is(equalTo(LocalDateTime.parse(dateTime)))
         );
     }
@@ -70,7 +73,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse genres from JSON",
-            SessionJsonParser.parseSessions(json).get(0).genres(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).genres(),
             contains("Комедия", "Драма")
         );
     }
@@ -84,7 +87,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse cinema name from JSON",
-            SessionJsonParser.parseSessions(json).get(0).cinema(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).cinema(),
             is(equalTo(cinemaName))
         );
     }
@@ -98,7 +101,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse address from JSON",
-            SessionJsonParser.parseSessions(json).get(0).address(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).address(),
             is(equalTo(address))
         );
     }
@@ -109,7 +112,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse price from JSON",
-            SessionJsonParser.parseSessions(json).get(0).price(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).price(),
             is(equalTo(750))
         );
     }
@@ -120,7 +123,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant convert null price to -1",
-            SessionJsonParser.parseSessions(json).get(0).price(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).price(),
             is(equalTo(-1))
         );
     }
@@ -133,7 +136,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant detect Russian subtitles session",
-            SessionJsonParser.parseSessions(json).get(0).russianSubtitlesSession(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).russianSubtitlesSession(),
             is(true)
         );
     }
@@ -146,7 +149,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant detect non-subtitles session",
-            SessionJsonParser.parseSessions(json).get(0).russianSubtitlesSession(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).russianSubtitlesSession(),
             is(false)
         );
     }
@@ -157,7 +160,7 @@ final class SessionJsonParserTest {
             "Фильм",
             List.of("2024-01-15T14:00:00", "2024-01-15T18:00:00", "2024-01-15T21:00:00")
         );
-        final List<Session> sessions = SessionJsonParser.parseSessions(json);
+        final List<Session> sessions = SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15));
 
         assertThat(
             "cant parse multiple sessions from same place",
@@ -174,7 +177,7 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant handle missing DistributorInfo and return empty description",
-            SessionJsonParser.parseSessions(json).get(0).description(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).description(),
             is(equalTo(""))
         );
     }
@@ -188,8 +191,32 @@ final class SessionJsonParserTest {
 
         assertThat(
             "cant parse verdict from JSON",
-            SessionJsonParser.parseSessions(json).get(0).verdict(),
+            SessionJsonParser.parseSessions(json, "", LocalDate.of(2024, 1, 15)).get(0).verdict(),
             is(equalTo(verdict))
+        );
+    }
+
+    @Test
+    void parseSessionsReturnsEmptyListWhenSessionDateDoesNotMatchExpectedDate() {
+        final String json = buildAfishaJson("Фильм", "2024-01-16T18:00:00", "500");
+        final LocalDate expectedDate = LocalDate.of(2024, 1, 15);
+
+        assertThat(
+            "cant return empty list when session date does not match expected date",
+            SessionJsonParser.parseSessions(json, "", expectedDate),
+            is(empty())
+        );
+    }
+
+    @Test
+    void parseSessionsReturnsSessionsWhenDateMatchesExpectedDate() {
+        final String json = buildAfishaJson("Фильм", "2024-01-15T18:00:00", "500");
+        final LocalDate expectedDate = LocalDate.of(2024, 1, 15);
+
+        assertThat(
+            "cant return sessions when date matches expected date",
+            SessionJsonParser.parseSessions(json, "", expectedDate),
+            hasSize(1)
         );
     }
 

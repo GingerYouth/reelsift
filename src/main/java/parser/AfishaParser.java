@@ -230,6 +230,7 @@ public class AfishaParser {
     @SuppressWarnings("PMD.CognitiveComplexity")
     public List<Session> parseSchedule(final String link, final String date) throws IOException {
         final List<Session> result = new ArrayList<>();
+        final LocalDate expectedDate = LocalDate.parse(date, SCHEDULE_DATE_FORMATTER);
         int page = 1;
         String jsonPage;
         Set<String> prevCinemas = new HashSet<>();
@@ -240,7 +241,7 @@ public class AfishaParser {
                     LOGGER.debug("Parsing schedule from: {}", url);
                 }
                 jsonPage = parseSchedulePage(url);
-                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage, url);
+                final List<Session> sessions = SessionJsonParser.parseSessions(jsonPage, url, expectedDate);
                 final Set<String> cinemas = sessions.stream().map(Session::cinema).collect(Collectors.toSet());
                 if (cinemas.equals(prevCinemas)) {
                     if (LOGGER.isDebugEnabled()) {
