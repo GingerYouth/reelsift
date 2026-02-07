@@ -41,8 +41,8 @@ public class AfishaParser {
         "href\\s*=\\s*\"([^\"]*)\"", Pattern.CASE_INSENSITIVE
     );
 
-    private static final int MIN_DELAY_MS = 3000;
-    private static final int MAX_DELAY_MS = 7000;
+    private static final int MIN_DELAY_MS = 500;
+    private static final int MAX_DELAY_MS = 1000;
     private static final long RETRY_BUDGET_MS = 300_000L;
     private static final long RETRY_INITIAL_DELAY_MS = 5_000L;
 
@@ -61,7 +61,7 @@ public class AfishaParser {
             final Connection.Response initialResponse = this.retrier.execute(
                 () -> {
                     try {
-                        return browserProfile.applyTo(
+                        return this.browserProfile.applyTo(
                             Jsoup.connect(BASE_LINK)
                                 .method(Connection.Method.GET)
                                 .timeout(30_000)

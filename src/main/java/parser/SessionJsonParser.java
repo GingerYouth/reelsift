@@ -16,6 +16,7 @@ import java.util.List;
 public final class SessionJsonParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionJsonParser.class);
+    private static final int NEXT_DAY_HOUR = 3;
 
     private SessionJsonParser() {
         // Utility class
@@ -103,7 +104,9 @@ public final class SessionJsonParser {
         for (int j = 0; j < sessions.length(); j++) {
             final JSONObject session = sessions.getJSONObject(j);
             final Session created = createSession(session, info, distributorInfo, genres, place, url);
-            if (!created.dateTime().toLocalDate().equals(expectedDate)) {
+            if (!created.dateTime().toLocalDate().equals(expectedDate)
+                && created.dateTime().toLocalTime().getHour() > NEXT_DAY_HOUR
+            ) {
                 return Collections.emptyList();
             }
             result.add(created);
