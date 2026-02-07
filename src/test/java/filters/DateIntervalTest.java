@@ -17,8 +17,8 @@ public class DateIntervalTest {
         LocalDate end = LocalDate.of(2024, 1, 5);
         DateInterval interval = new DateInterval(start, end);
 
-        assertEquals(start, interval.getStart());
-        assertEquals(end, interval.getEnd());
+        assertEquals(start, interval.start());
+        assertEquals(end, interval.end());
     }
 
     @Test(expected = IllegalArgumentException.class)

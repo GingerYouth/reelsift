@@ -28,7 +28,6 @@ public class AfishaParser {
     private static final String DATA_TEST_ATTR = "data-test";
     private final Map<String, String> cookies;
     private static final String BASE_LINK = "https://www.afisha.ru";
-    private static final String TODAY = "na-segodnya";
     public static final String SCHEDULE_PAGE = "%s/%s/page%d/";
 
     private final String currentDatePeriod;
@@ -79,52 +78,6 @@ public class AfishaParser {
             throw e;
         }
         return cookies;
-    }
-
-    /**
-     * Parse today films.
-     *
-     * @return The map of film names to the link to the sessions
-     * @deprecated Use {@link AfishaParser#parseFilmsInDates(String)} instead
-     */
-    @Deprecated
-    public List<MovieThumbnail> parseTodayFilms() throws IOException {
-        final List<MovieThumbnail> films = new ArrayList<>();
-        List<MovieThumbnail> pageFilms;
-        Set<String> prevNames = new HashSet<>();
-        int page = 0;
-        do {
-            try {
-                final String url = String.format(this.filmsPageN, TODAY, page);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Parsing films from: {}", url);
-                }
-                pageFilms = parseFilmsPage(url);
-                final Set<String> names = pageFilms
-                    .stream()
-                    .map(MovieThumbnail::name)
-                    .collect(Collectors.toSet());
-                if (prevNames.equals(names)) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Found duplicate film page, stopping parse.");
-                    }
-                    break;
-                }
-                prevNames = names;
-                page++;
-                films.addAll(pageFilms);
-                addRandomDelay();
-            } catch (final HttpStatusException httpEx) {
-                if (LOGGER.isWarnEnabled()) {
-                    LOGGER.warn("HTTP error fetching film page: {}", httpEx.getMessage());
-                }
-                break;
-            }
-        } while (!pageFilms.isEmpty());
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Parsed {} films for today.", films.size());
-        }
-        return films;
     }
 
     /**

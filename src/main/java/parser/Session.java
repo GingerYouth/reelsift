@@ -140,12 +140,39 @@ public final class Session {
     }
 
     /**
-     * A message for a single film, containing the formatted text
-     * and any sessions that were omitted due to the threshold.
+     * Film-related data for a single film message, containing
+     * the formatted text, omitted sessions and image.
      */
-    public record FilmMessage(
-        String text, List<Session> omittedSessions, String imageUrl
-    ) {
+    public static final class FilmMessage {
+        private static final int MAX_CAPTION_LENGTH = 1024;
+        private static final String TRUNCATION_SUFFIX = " ...";
+
+        private final String text;
+        private final List<Session> omittedSessions;
+        private final String imageUrl;
+
+        /** Constructor. */
+        public FilmMessage(
+            final String text, final List<Session> omittedSessions, final String imageUrl
+        ) {
+            this.text = text;
+            this.omittedSessions = omittedSessions;
+            this.imageUrl = imageUrl;
+        }
+
+        public List<Session> omittedSessions() {
+            return this.omittedSessions;
+        }
+
+        public String imageUrl() {
+            return imageUrl;
+        }
+
+        public String truncatedText() {
+            return this.text == null || this.text.length() <= MAX_CAPTION_LENGTH
+                ? this.text
+                : this.text.substring(0, MAX_CAPTION_LENGTH - TRUNCATION_SUFFIX.length()) + TRUNCATION_SUFFIX;
+        }
     }
 
     /**
@@ -220,13 +247,10 @@ public final class Session {
      * only film info is shown without individual session lines,
      * and the omitted sessions are included in the result.
      *
-     * @param sessions         List of sessions to format
-     * @param sessionThreshold Max sessions per film before they're omitted
+     * @param sessions List of sessions to format
      * @return List of {@link FilmMessage} records, one per movie
      */
-    public static List<FilmMessage> toSplitStrings(
-            final List<Session> sessions, final int sessionThreshold
-    ) {
+    public static List<FilmMessage> toSplitStrings(final List<Session> sessions) {
         final List<FilmMessage> result = new ArrayList<>();
         final StringBuilder builder = new StringBuilder(60);
 

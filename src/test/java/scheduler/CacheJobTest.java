@@ -52,7 +52,7 @@ final class CacheJobTest {
         assertThat(
             "job doesnt use correct start date",
             spyCache.getIntervalsChecked().stream()
-                .allMatch(i -> i.getStart().equals(today)),
+                .allMatch(i -> i.start().equals(today)),
             is(true)
         );
     }

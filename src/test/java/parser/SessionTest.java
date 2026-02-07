@@ -20,8 +20,10 @@ public class SessionTest {
     public void testSessionCreation() {
         LocalDateTime dateTime = LocalDateTime.of(2024, 1, 1, 10, 30);
         List<String> genres = Arrays.asList("Action", "Drama");
-        Session session = new Session(dateTime, "Test Movie", "Description", "Verdict",
-                                    genres, "Cinema", "Address", 500, "link", true);
+        Session session = new Session(
+            dateTime, "Test Movie", "Description", "Verdict",
+            genres, "Cinema", "Address", 500, "link", true
+        );
 
         assertEquals(dateTime, session.dateTime());
         assertEquals("Test Movie", session.name());
@@ -128,7 +130,7 @@ public class SessionTest {
     public void toSplitStringsReturnsEmptyListForEmptyInput() {
         assertThat(
             "cant return empty list for empty session input",
-            Session.toSplitStrings(Collections.emptyList(), 10),
+            Session.toSplitStrings(Collections.emptyList()),
             is(empty())
         );
     }
@@ -145,7 +147,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "should always return all sessions in the omittedSessions list",
-            Session.toSplitStrings(sessions, 10).get(0).omittedSessions(),
+            Session.toSplitStrings(sessions).get(0).omittedSessions(),
             hasSize(3)
         );
     }
@@ -162,7 +164,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "cant return omitted sessions when count reaches threshold",
-            Session.toSplitStrings(sessions, 10).get(0).omittedSessions(),
+            Session.toSplitStrings(sessions).get(0).omittedSessions(),
             hasSize(10)
         );
     }
@@ -224,7 +226,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "cant combine all sessions of one movie into a single message",
-            Session.toSplitStrings(sessions, 10),
+            Session.toSplitStrings(sessions),
             hasSize(1)
         );
     }
@@ -241,7 +243,7 @@ public class SessionTest {
         );
         assertThat(
             "cant include film name in combined message",
-            Session.toSplitStrings(sessions, 10).get(0).text(),
+            Session.toSplitStrings(sessions).get(0).truncatedText(),
             containsString(movieName)
         );
     }
@@ -258,7 +260,7 @@ public class SessionTest {
         );
         assertThat(
             "should not include session details in the main message text",
-            Session.toSplitStrings(sessions, 10).get(0).text(),
+            Session.toSplitStrings(sessions).get(0).truncatedText(),
             not(containsString(cinemaName))
         );
     }
@@ -275,7 +277,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "cant omit sessions when count reaches threshold",
-            Session.toSplitStrings(sessions, 10).get(0).text(),
+            Session.toSplitStrings(sessions).get(0).truncatedText(),
             not(containsString(cinemaName))
         );
     }
@@ -292,7 +294,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "cant include film info when sessions are omitted",
-            Session.toSplitStrings(sessions, 10).get(0).text(),
+            Session.toSplitStrings(sessions).get(0).truncatedText(),
             containsString(movieName)
         );
     }
@@ -313,7 +315,7 @@ public class SessionTest {
         );
         assertThat(
             "cant produce exactly one message per movie",
-            Session.toSplitStrings(sessions, 10),
+            Session.toSplitStrings(sessions),
             hasSize(2)
         );
     }
@@ -330,7 +332,7 @@ public class SessionTest {
             .toList();
         assertThat(
             "should always hide session details from the main text",
-            Session.toSplitStrings(sessions, 10).get(0).text(),
+            Session.toSplitStrings(sessions).get(0).truncatedText(),
             not(containsString(cinemaName))
         );
     }
