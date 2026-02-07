@@ -45,13 +45,24 @@ public class SessionCacheManager {
             return;
         }
 
-        final AfishaParser parser = new AfishaParser(city);
+        final AfishaParser parser = this.createAfishaParser(city);
         final List<String> dateRanges = convertToDateRanges(missingDates);
 
         for (final String dateRange : dateRanges) {
             cacheDateRange(parser, dateRange, missingDates, city);
         }
     }
+
+    /**
+     * Creates an AfishaParser instance for the given city.
+     *
+     * @param city The city for which to create the parser
+     * @return An {@link AfishaParser} instance
+     */
+    protected AfishaParser createAfishaParser(final City city) throws IOException {
+        return new AfishaParser(city);
+    }
+
 
     /**
      * Get cached sessions for the given dates and city.

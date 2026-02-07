@@ -62,7 +62,7 @@ public final class SchedulerInitializer {
             JOB_ID,
             Cron.daily(SCHEDULE_HOUR, SCHEDULE_MINUTE),
             ZoneId.of(MOSCOW_TIMEZONE),
-            job -> job.cacheAllCities()
+            CacheJob::cacheAllCities
         );
 
         LOGGER.info(
