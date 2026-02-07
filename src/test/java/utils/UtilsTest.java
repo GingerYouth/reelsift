@@ -1,22 +1,18 @@
 package utils;
 
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import java.util.UUID;
-
-import filters.LlmFilter;
-import org.junit.jupiter.api.Test;
-
 /**
  * Unit tests for {@link Utils}.
- * Uses a fake DeepSeekService to test filtering logic without network calls.
  */
 final class UtilsTest {
 
     @Test
-    void removeDateFromUrlEndRemovesDatePatternAndTrailingSlash() {
+    void removeDateAndTrailingSlash() {
         assertThat(
             "cant remove date pattern with trailing slash from URL",
             Utils.removeDateFromUrlEnd("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024/"),
@@ -25,7 +21,7 @@ final class UtilsTest {
     }
 
     @Test
-    void removeDateFromUrlEndRemovesDatePatternWithoutTrailingSlash() {
+    void removeDate() {
         assertThat(
             "cant remove date pattern without trailing slash from URL",
             Utils.removeDateFromUrlEnd("https://www.afisha.ru/msk/cinema/film/12345/21-01-2024"),
@@ -34,12 +30,23 @@ final class UtilsTest {
     }
 
     @Test
-    void removeDateFromUrlEndHandlesRandomUrlWithDate() {
-        final String randomPath = UUID.randomUUID().toString().replace("-", "");
+    void removeDateAndMore() {
+        String url = "https://www.afisha.ru/msk/schedule_cinema_product/cheburashka-2-295278/09-02-2026#rcmrclid=c3b6668db2f729b0/10-02-2026/page1/";
+        String expected = "https://www.afisha.ru/msk/schedule_cinema_product/cheburashka-2-295278";
         assertThat(
-            "cant remove date from URL with random path segment",
-            Utils.removeDateFromUrlEnd("https://example.com/" + randomPath + "/15-06-2025/"),
-            is(equalTo("https://example.com/" + randomPath))
+            "should remove date and everything after",
+            Utils.removeDateFromUrlEnd(url),
+            is(equalTo(expected))
+        );
+    }
+
+    @Test
+    void removeDateDoesNothingForUrlWithoutDate() {
+        String url = "https://www.afisha.ru/msk/cinema/film/12345/";
+        assertThat(
+            "should not change a url that does not contain a date pattern",
+            Utils.removeDateFromUrlEnd(url),
+            is(equalTo(url))
         );
     }
 }

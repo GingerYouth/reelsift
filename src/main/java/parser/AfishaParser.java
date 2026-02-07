@@ -33,6 +33,7 @@ public class AfishaParser {
 
     private final String currentDatePeriod;
     private final String filmsPageN;
+    private final Retrier retrier;
     private static final DateTimeFormatter SCHEDULE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     private static final String USER_AGENT =
@@ -46,10 +47,13 @@ public class AfishaParser {
 
     private static final int MIN_DELAY_MS = 1000;
     private static final int MAX_DELAY_MS = 3000;
+    private static final long RETRY_BUDGET_MS = 300_000L;
+    private static final long RETRY_INITIAL_DELAY_MS = 5_000L;
     private static final Random RANDOM = new Random();
 
     public AfishaParser(final City city) throws IOException {
         this.filmsPageN = "https://www.afisha.ru/" + city.asCode() + "/schedule_cinema/%s/page%d/";
+        this.retrier = new Retrier(RETRY_BUDGET_MS, RETRY_INITIAL_DELAY_MS);
         this.cookies = this.getCookies();
         this.currentDatePeriod = LocalDate.now().format(SCHEDULE_DATE_FORMATTER);
     }
@@ -57,10 +61,13 @@ public class AfishaParser {
     private Map<String, String> getCookies() throws IOException {
         final Map<String, String> cookies;
         try {
-            final Connection.Response initialResponse = Jsoup.connect(BASE_LINK)
-                .method(Connection.Method.GET)
-                .userAgent(USER_AGENT)
-                .execute();
+            final Connection.Response initialResponse = this.retrier.execute(
+                () -> Jsoup.connect(BASE_LINK)
+                    .method(Connection.Method.GET)
+                    .userAgent(USER_AGENT)
+                    .timeout(30_000)
+                    .execute()
+            );
             cookies = initialResponse.cookies();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Initial cookies: {}", cookies);
@@ -169,9 +176,14 @@ public class AfishaParser {
      *
      * @return The list of {@link MovieThumbnail}.
      */
-    private static List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
+    private List<MovieThumbnail> parseFilmsPage(final String link) throws IOException {
         final List<MovieThumbnail> thumbnails = new ArrayList<>();
-        final Document document = Jsoup.connect(link).userAgent(USER_AGENT).get();
+        final Document document = this.retrier.execute(
+            () -> Jsoup.connect(link)
+                .userAgent(USER_AGENT)
+                .timeout(30_000)
+                .get()
+        );
         final List<Element> filmContainers = document.select("div[data-test='ITEM']");
 
         for (final Element container : filmContainers) {
@@ -288,18 +300,19 @@ public class AfishaParser {
     }
 
     private String parseSchedulePage(final String page) throws IOException {
-        return Jsoup.connect(page)
-            .ignoreContentType(true)
-            .cookies(this.cookies)
-            .header("Accept", "application/json")
-            //.header("Referer", apiUrl)
-            .header("Sec-Fetch-Dest", "empty")
-            .header("Sec-Fetch-Mode", "cors")
-            .header("Sec-Fetch-Site", "same-origin")
-            .userAgent(USER_AGENT)
-            .timeout(30_000)
-            .execute()
-            .body();
+        return this.retrier.execute(
+            () -> Jsoup.connect(page)
+                .ignoreContentType(true)
+                .cookies(this.cookies)
+                .header("Accept", "application/json")
+                .header("Sec-Fetch-Dest", "empty")
+                .header("Sec-Fetch-Mode", "cors")
+                .header("Sec-Fetch-Site", "same-origin")
+                .userAgent(USER_AGENT)
+                .timeout(30_000)
+                .execute()
+                .body()
+        );
     }
 
     private static void addRandomDelay() {
